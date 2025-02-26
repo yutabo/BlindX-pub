@@ -1,1 +1,1 @@
-# BlIndX-pub
+# BlindX-pub
