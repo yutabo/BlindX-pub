@@ -1,16 +1,22 @@
+<!--
+MIT License (c) 2024, 2025 AxTecChare
+See LICENSE.txt for details.
+-->
+
 # BlindX
 
 <p align="center">
     <img src="./screenshots/title0.jpg" width="640">
 </p>
 
-BlindX は、Transformer T5 (Text-to-Text Transfer Transformer) の推論機能を活用した日本語入力フロントエンドであり、
+BlindX は、Transformer ベースの推論機能を活用した日本語入力フロントエンドであり、
 AI の柔軟な日本語生成機能を活かして、コンピュータとの快適な対話環境を提供します。
 推論処理は、GPU を搭載した専用サーバを介して実行されます。
 これにより、入力の障壁の少ないエッジクライアントの構築を目指します。
 
 ここでは主な処理の流れを説明します。
 コードの詳細はリポジトリをご参照ください。
+ここで説明される内容は開発中のものも含まれます。内容の一部は将来変更される可能性があります。
 
 # サーバとの通信
 
@@ -176,6 +182,14 @@ BlindX の入力は、字句解析前の日本語ひらがなです。
 全員分のコンテキストを保持しておいて、広範な範囲で blindx のサーバで変換・編集をかけることが可能です。
 各メッセージを時系列でマージして長いチャンクとして変換をかけることでより文脈に即した変換が期待できます。
 
+## ご興味を持たれた方へ
+
+ここまででご興味をもたれましたら、ショーケースのインストールとビルドについて[以下](demo_25.02/apps/app0/README.md)を参照ください。
+
+実際にBlindXを利用したアプリケーションを開発される場合は、開発用アカウントの登録（無料）が必要になります。
+ご希望の、[こちら](https://axtechcare.com/company/contact-blindx/)よりお問い合わせください。
+BlindXアプリ開発用サーバーへのアクセス方法などご案内いたします。商用利用の際は別途ご相談ください。
+
 # ショーケースとベストプラクティス
 
 ここで紹介した機能を実装した MIT ライセンスのショーケースコードが GitHub にあります。詳細はリポジトリをご参照ください。
@@ -209,10 +223,11 @@ Web アプリでは WSGI/ASGI など非同期な Web サーバが一般的に使
 ## 入力の反映方法
 
 ユーザの入力の反映には
-- 一旦フレームワークで用意されたテキストボックスういジェットにエコーされた文字列をフックして内容を動的に書き換える方法と、
-- 低レベルのキーボード入力やマイク入力を捕獲する方法
+- フレームワークで用意されたテキストボックスのウィジェットにエコーされた文字列をフックして内容を動的に書き換える
+- 低レベルのキーボード入力やマイク入力を捕獲する
 
-があります。ショーケースでは２つの方法のいずれかが実装されています。
+などの方法があります。
+ショーケースでは２つの方法のいずれかが実装されています。
 
 ## スレッドと asyncio
 
@@ -224,7 +239,10 @@ UI と同じイベントループで send()/recv() を行うよりは別スレ�
 
 ## ショーケースで使用している UI フレームワーク
 
-ショーケースの UI フレームワークには [Flet](https://flet.dev/) を採用しています。
+ショーケースの UI フレームワークにおいては [Flet](https://flet.dev/) を採用しています。
+
+ただし BlindX 自身は特定のフレームワークに依存しているわけではありません。
+この他のフレームワークに対応したショーケースも今後公開する予定です。
 
 ## Compare
 
@@ -235,7 +253,7 @@ UI と同じイベントループで send()/recv() を行うよりは別スレ�
    <video src="./screenshots/scompare2.mp4" controls="true" width="640"></video>
 </p>
 
-詳細とソースコードは github を参照ください
+詳細は[こちら](demo_25.02/apps/app0/README.md) を参照ください
 
 ## Real-time Chat
 
@@ -248,7 +266,7 @@ UI と同じイベントループで send()/recv() を行うよりは別スレ�
    <video src="./screenshots/schat2.mp4" controls="true" width="480"></video>
 </p>
 
-詳細とソースコードは github を参照ください
+詳細は[こちら](demo_25.02/apps/app1/README.md) を参照ください
 
 ## On-line Edit
 
@@ -260,7 +278,7 @@ UI と同じイベントループで send()/recv() を行うよりは別スレ�
    <video src="./screenshots/report4.mp4" controls="true" width="640"></video>
 </p>
 
-詳細とソースコードは github を参照ください
+詳細は[こちら](demo_25.02/apps/app2/README.md) を参照ください
 
 ## この記事について
 
@@ -270,6 +288,13 @@ Our latest technology related to BlindX is currently pending patent approval, an
 
 「BlindX」は AXTech.Care Inc. の登録商標です。
 当社の BlindX に関連する最新技術は現在特許出願中であり、当社は知的財産の保護に努めてまいります。
+
+
+## ライセンス
+Evaluation codes here are released under the MIT License. See LICENSE for further details.
+Copyright (c) 2024-2025 AXTech.Care Inc.
+
+Revised 03/06/2025
 
 
 
