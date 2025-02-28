@@ -1,0 +1,10 @@
+__pycache__
+_site
+.venv
+.pytest_cache
+.ruff_cache
+Gemfile
+models
+assets/ipadic-mecab-2_7_0
+work
+log
