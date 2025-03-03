@@ -185,7 +185,7 @@ BlindX の入力は、字句解析前の日本語ひらがなです。
 
 ## ご興味を持たれた方へ
 
-ここまででご興味をもたれましたら、ショーケースのインストールとビルドについて[以下](demo_25.02/apps/app0/README.md)を参照ください。
+ここまででご興味をもたれましたら、ショーケースのインストールとビルドについて[以下](README.md)を参照ください。
 
 実際にBlindXを利用したアプリケーションを開発される場合は、開発用アカウントの登録（無料）が必要になります。
 ご希望の、[こちら](https://axtechcare.com/company/contact-blindx/)よりお問い合わせください。
@@ -254,8 +254,6 @@ UI と同じイベントループで send()/recv() を行うよりは別スレ�
    <video src="./screenshots/scompare2.mp4" controls="true" width="640"></video>
 </p>
 
-詳細は[こちら](demo_25.02/apps/app0/README.md) を参照ください
-
 ## Real-time Chat
 
 非同期なリアルタイムチャット
@@ -267,8 +265,6 @@ UI と同じイベントループで send()/recv() を行うよりは別スレ�
    <video src="./screenshots/schat2.mp4" controls="true" width="480"></video>
 </p>
 
-詳細は[こちら](demo_25.02/apps/app1/README.md) を参照ください
-
 ## On-line Edit
 
 パラグラフにまたがった広範囲の日本語変換をおこなったテキストエディタです。
@@ -278,8 +274,6 @@ UI と同じイベントループで send()/recv() を行うよりは別スレ�
 <p align="center">
    <video src="./screenshots/report4.mp4" controls="true" width="640"></video>
 </p>
-
-詳細は[こちら](demo_25.02/apps/app2/README.md) を参照ください
 
 ## この記事について
 
@@ -292,7 +286,7 @@ Our latest technology related to BlindX is currently pending patent approval, an
 
 
 ## ライセンス
-Evaluation codes here are released under the MIT License. See LICENSE for further details.
+Evaluation codes here are released under the MIT License. See [LICENSE](./LICENSE.txt) for further details.
 Copyright (c) 2024-2025 AXTech.Care Inc.
 
 Revised 03/06/2025
