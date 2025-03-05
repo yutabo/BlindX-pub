@@ -37,6 +37,11 @@ class RemoteInference():
 
         except Exception as e:
             self.logger.error(f'connection failed {e}.')
+            self.logger.error(f' ******************************************************** ')
+            self.logger.error(f' * 変換サーバの uri または key が違う可能性があります')
+            self.logger.error(f' *     uri : {self.uri}')
+            self.logger.error(f' *     key : {self.key}')
+            self.logger.error(f' ******************************************************** ')
             self.websocket = None
                 
     async def shutdown_async(self):
