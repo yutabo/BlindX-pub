@@ -3,7 +3,7 @@
 ## 実行方法
 
 ```
-cd BlindX-pub/demo-25.02/apps
+cd BlindX-pub/demo-25.04/apps
 flet app0
 ```
 プログラムが起動したら上段にウィンドウのローマ字入力がひらがな変換されて下段に表示されます。

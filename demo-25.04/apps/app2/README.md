@@ -4,7 +4,7 @@
 ## 実行方法
 
 ```
-cd BlindX-pub/demo-25.02/apps
+cd BlindX-pub/demo-25.04/apps
 flet app2
 ```
 

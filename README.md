@@ -6,11 +6,13 @@
 フォルダは以下の構成をとります。
 ```
 BlindX-pub
-├── demo-25.02
+├── demo-25.04
 │   ├── apps			クライアントアプリケーション
 │   │   ├── app0		アプリ #0
 │   │   ├── app1		アプリ #1
 │   │   ├── app2		アプリ #2
+│   │   ├── demo0		デモ #0 (under construction)
+│   │   ├── demo1		デモ #1
 │   │   └── requirements.txt
 │   ├── assets			サンプルデータ
 │   │   ├── config.txt		サーバアドレスとキー
@@ -33,16 +35,16 @@ python 3.12.x をご使用ください。
 
 ## 設定ファイルの修正
 
-[demo-25.02/assets/config.txt](./demo-25.02/assets/config.txt) を開き URI とキーを設定します。
+[demo-25.04/assets/config.txt](./demo-25.04/assets/config.txt) を開き URI とキーを設定します。
 スペースは空けずに設定してください。
 
 ~~~
-% vi demo-25.02/assets/config.txt
+% vi demo-25.04/assets/config.txt
 inference_server_uri=wss://finer-charmed-dassie.ngrok-free.app
 api_key=[ここにキーを書き込みます]
 ~~~
 
-パーサについては [demo-25.02/blindx/misc.py](./demo-25.02/blindx/misc.py) を参照ください
+パーサについては [demo-25.04/blindx/misc.py](./demo-25.04/blindx/misc.py) を参照ください
 
 
 ## ビルドと実行
@@ -52,7 +54,7 @@ api_key=[ここにキーを書き込みます]
 仮想環境を構築します。venv を使用した場合は以下のようになります。
 
 ```
-% cd demo-25.02/apps
+% cd demo-25.04/apps
 % python3 -m venv --prompt apps .venv
 % source .venv/bin/activate
 % pip install -r requirement.txt
@@ -94,11 +96,11 @@ https://flet.dev/docs/reference/cli/run/
 
 それぞれのショーケースの詳細はこちらを参照ください。
 
-[BlindX Compare](./demo-25.02/apps/app0/README.md)
+[BlindX Compare](./demo-25.04/apps/app0/README.md)
 
-[BlindX Chat](./demo-25.02/apps/app1/README.md)
+[BlindX Chat](./demo-25.04/apps/app1/README.md)
 
-[BlindX Report](./demo-25.02/apps/app2/README.md)
+[BlindX Report](./demo-25.04/apps/app2/README.md)
 
 
 ### プログラムの異常終了

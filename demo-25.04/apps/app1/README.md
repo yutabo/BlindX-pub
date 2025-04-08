@@ -3,7 +3,7 @@
 ## 実行方法
 
 ```
-cd BlindX-pub/demo-25.02/apps
+cd BlindX-pub/demo-25.04/apps
 flet app1
 ```
 
@@ -23,7 +23,7 @@ flet app1
 ### サーバの起動
 
 ```
-% cd BlindX-pub/demo-25.02/apps
+% cd BlindX-pub/demo-25.04/apps
 % flet app1 --web --port 6123
 ```
 ポート番号はここでは 6123 番を指定しています。空いているポートを使用ください。
