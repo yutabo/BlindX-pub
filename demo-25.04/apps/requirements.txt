@@ -1,0 +1,6 @@
+# requirements for UI
+flet
+websockets
+aioconsole
+mozcpy
+mecab
