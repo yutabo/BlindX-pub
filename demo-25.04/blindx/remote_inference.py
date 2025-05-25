@@ -4,17 +4,16 @@
 import asyncio
 import websockets
 import logging
-from .misc import set_logger, load_args_from_file
+from . import misc
 
 class RemoteInference():
 
     def __init__(self):
+
         self.logger = logging.getLogger(__name__)
         self.websocket = None
-        self.set_uri_and_key()
 
-    def set_uri_and_key(self):
-        args = load_args_from_file('assets/config.txt')
+        args = misc.load_args_from_file('config.txt')
         self.uri = args.get('inference_server_uri')
         self.key = args.get('api_key')
 
@@ -43,6 +42,15 @@ class RemoteInference():
             self.logger.error(f' *     key : {self.key}')
             self.logger.error(f' ******************************************************** ')
             self.websocket = None
+
+        self.dict_names = await self.send_recv_async('query:', 'dict_names')
+        self.t5_names = [d.split(':')[0] for d in self.dict_names.split(':') if d]
+
+        self.dict_names = self.dict_names.split(':')
+        self.dict_count = len(self.dict_names)
+
+#        print(f"[DEBUG] self.dict_names = {self.dict_names}")
+#        print(f"[DEBUG] self.dict_count = {self.dict_count}")
                 
     async def shutdown_async(self):
         if self.websocket:
