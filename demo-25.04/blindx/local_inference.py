@@ -9,18 +9,24 @@ import os
 import asyncio
 import torch
 import logging
+import re
 
 class LocalInference():
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
+        args = misc.load_args_from_file('config.txt')
+#        model_filter = args.get('model_filter', 'all')
+        model_filter = args.get('model_filter', '256')
+        print(f'model_filter = {model_filter}')
         self.target_dir = misc.search_path('models')
-        self.t5_names = [name for name in os.listdir(self.target_dir) if 'all' in name]
+        self.t5_names = [name for name in os.listdir(self.target_dir) if re.search(model_filter, name)]
         self.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
         self.logger.info(f'torch: version={torch.__version__} device={self.device}')
         self.tokenizer = T5Tokenizer.from_pretrained('sonoisa/t5-base-japanese-v1.1', legacy=True)
         self.text_wrapper = TextWrapper()
+        self.hex_pattern = re.compile(r'<0x([0-9A-Fa-f]+)>')        
 
         self.t5s = []
         for t5_name in self.t5_names:
