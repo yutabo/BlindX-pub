@@ -1,0 +1,40 @@
+import gradio as gr
+from pathlib import Path
+
+def run_proofreader(input_dir, output_dir, hotwords_text):
+    # 校正対象のファイル群
+    input_path = Path(input_dir)
+    output_path = Path(output_dir)
+    hotwords = hotwords_text.strip().split()
+
+    if not input_path.exists():
+        return "❌ 入力ディレクトリが存在しません"
+    if not output_path.exists():
+        output_path.mkdir(parents=True)
+
+    # 校正ロジック（あなたのコードに差し替え）
+    from myproofreader import Proofreader  # 仮のimport
+    pf = Proofreader(hotwords=hotwords)
+    for file in input_path.glob("*.txt"):
+        result = pf.process(file.read_text())
+        output_file = output_path / file.name
+        output_file.write_text(result)
+
+    return f"✅ 校正完了: {len(list(input_path.glob('*.txt')))} 件処理しました"
+
+# Gradio UI構成
+with gr.Blocks() as app:
+    gr.Markdown("### 📘 校正ツール Web UI")
+    
+    input_dir = gr.Textbox(label="入力ディレクトリのパス")
+    output_dir = gr.Textbox(label="出力ディレクトリのパス")
+    hotwords = gr.Textbox(label="HOTWORDS（スペース区切り）")
+    run_button = gr.Button("校正スタート")
+
+    result = gr.Textbox(label="処理結果ログ")
+
+    run_button.click(fn=run_proofreader,
+                     inputs=[input_dir, output_dir, hotwords],
+                     outputs=result)
+
+app.launch()

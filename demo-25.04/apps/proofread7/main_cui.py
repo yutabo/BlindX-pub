@@ -9,11 +9,51 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 import asyncio
 import blindx.misc as misc
 from proofreader import Proofreader
+from proofreader import check_chunk_match
 import argparse
 from tqdm import tqdm
 import logging
 import re
 import io
+import jaconv
+import unicodedata
+import difflib
+
+SCORE_THRESHOLD = 40  # ← 好みに応じて調整可能（60とかでも可）
+
+def normalize(text):
+    return unicodedata.normalize("NFKC", text.strip())
+
+def split_output_text(output_text: str, expected_lines: int):
+    if output_text.count('\\n') >= expected_lines - 1:
+        # 改行数が十分ある場合は \\n で分割
+        return output_text.split('\\n')
+    else:
+        # 改行数が不足している場合は句点で分割
+        lines = re.split(r'(?<=。)', output_text)
+        return [line.strip() for line in lines if line.strip()]
+
+def make_numbered_input(lines):
+    """入力行に 1: 文… という形式で番号を振って連結する"""
+    return "\n".join(f"{i+1}: {line}" for i, line in enumerate(lines))
+
+import re
+
+def extract_numbered_output(output_text: str, expected_lines: int):
+    """
+    '1: ...\\n2: ...\\n3: ...' のような出力を、行ごとのリストに変換
+    """
+    matches = re.findall(r'\d+\s*:\s*.*?(?=\n\d+\s*:|$)', output_text, flags=re.DOTALL)
+    lines = [re.sub(r'^\d+\s*:\s*', '', m).strip() for m in matches]
+
+    # 行数補正
+    if len(lines) < expected_lines:
+        lines += [''] * (expected_lines - len(lines))
+    elif len(lines) > expected_lines:
+        lines = lines[:expected_lines]
+
+    return lines
+
 
 if __name__ == "__main__":
 
@@ -22,32 +62,99 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input', help='source filename', default='input.txt')
     parser.add_argument('-o', '--output', help='result filename', default='-')
-    parser.add_argument('-e', '--echo', help='phrase') 
-    parser.add_argument('--encoding', choices=['utf-8', 'utf-16-le'], default='utf-8', help='text encoding') 
-    parser.add_argument('--hotwords', nargs='+', help='hot words')
+    parser.add_argument('-e', '--echo', help='phrase')
+    parser.add_argument('--hotwords', help='スペース区切りでHOTWORDSを指定（省略可能）', default='') 
+    #    parser.add_argument('--encoding', choices=['utf-8', 'utf-16-le'], default='utf-8', help='text encoding') 
+    #    parser.add_argument('--hotwords', nargs='+', help='hot words')
+    parser.add_argument('--encoding', default='auto', help='text encoding (e.g., utf-8, utf-16-le, or auto)')
     parser.add_argument('--hotfile', help='hot file')
     args = parser.parse_args()
-    def read_lines(name):
-        with open(name, 'r', encoding=args.encoding) as f:
-            lines = []
-            for input_text in f:
-                line = ''
-                for char in input_text.rstrip('\n'):
-                    if ord(char) != 65279:
-                        line += char
-                lines.append(line)
-            return lines
+
+
+    def chunk_lines_by_char_limit(lines, max_chars=256):
+        chunks = []
+        current_chunk = []
+        current_length = 0
+        current_indices = []
+
+        for idx, line in enumerate(lines):
+            line_length = len(line)
+            if current_length + line_length <= max_chars:
+                current_chunk.append(line)
+                current_indices.append(idx)
+                current_length += line_length
+            else:
+                if current_chunk:
+                    chunks.append((current_chunk.copy(), current_indices.copy()))
+                    current_chunk = [line]
+                    current_indices = [idx]
+                    current_length = line_length
+                    
+        if current_chunk:
+            chunks.append((current_chunk.copy(), current_indices.copy()))
+        return chunks
+
+    import chardet
+    from pathlib import Path
+
+    def read_lines(path_str, encoding='auto'):
+        path = Path(path_str)
+        raw = path.read_bytes()
+
+        if encoding == 'auto':
+            detected = chardet.detect(raw)
+            encoding = detected.get('encoding') or 'utf-8'
+
+        try:
+            decoded = raw.decode(encoding)
+        except UnicodeDecodeError:
+            print(f"⚠️ decode error with {encoding}, fallback to utf-8 with ignore")
+            decoded = raw.decode('utf-8', errors='ignore')
+
+        return [line.lstrip('\ufeff') for line in decoded.splitlines()]
 
     def load_hotwords(filepath):
-        with open(filepath, 'r', encoding='utf-8') as f:
-            text = f.read()
-            hotwords = text.strip().split()
+        path = Path(filepath)
+
+        try:
+            raw = path.read_bytes()
+        except Exception as e:
+            print(f"❌ hotfile 読み込み失敗: {filepath} → {e}")
+            return []
+
+        detected = chardet.detect(raw)
+        encoding = detected.get("encoding") or "utf-8"
+
+        try:
+            text = raw.decode(encoding)
+        except UnicodeDecodeError:
+            print(f"⚠️ UnicodeDecodeError（{encoding}）→ fallback to utf-8(errors='ignore')")
+            text = raw.decode("utf-8", errors="ignore")
+
+        hotwords = text.strip().split()
         return hotwords
+    
+    # def read_lines(name):
+    #     with open(name, 'r', encoding=args.encoding) as f:
+    #         lines = []
+    #         for input_text in f:
+    #             line = ''
+    #             for char in input_text.rstrip('\n'):
+    #                 if ord(char) != 65279:
+    #                     line += char
+    #             lines.append(line)
+    #         return lines
+
+    # def load_hotwords(filepath):
+    #     with open(filepath, 'r', encoding='utf-8') as f:
+    #         text = f.read()
+    #         hotwords = text.strip().split()
+    #     return hotwords
 
     async def main():
         misc.set_logger('kousei', logging.WARN)
         RED = '\033[31m'
-        RED_BOLD = '\033[1;31m'
+        BOLD = '\033[1m'
         RESET = '\033[0m'
 
         hotwords = [
@@ -62,12 +169,14 @@ if __name__ == "__main__":
 
         if args.echo:
             lines = [args.echo]
-        else:    
-            lines = read_lines(args.input)
+        else:
+            lines = read_lines(args.input, encoding=args.encoding)            
+#            lines = read_lines(args.input)
 
-        proofreader = Proofreader()
+        proofreader  = Proofreader()
+        proofreaders = []
+
         await proofreader.start_async()
-
         await proofreader.set_pattern_async('|'.join(hotwords))
         await proofreader.set_replacement_async('$')
 
@@ -83,100 +192,153 @@ if __name__ == "__main__":
         fail_count = 0
         pass_count = 0
 
+        chunks = chunk_lines_by_char_limit(lines)
 
-        for lineno, line in enumerate(progress_bar if progress_bar else lines):
-            proofreader.output_texts = []
-            proofreader.input_text = ""
-            proofreader.hiragana_text = ""                
-            
-            if not line.strip():
-#                print(f"スキップされた行: {lineno}")
-                continue
+        #        print(f"[DEBUG] チャンク数 = {len(chunks)}")
+        print(f"hotwords : {' '.join(hotwords)}")
+        print('\n--------')
+
+        # 1チャンクずつ処理
+        for chunk_index, (chunk_lines, line_indices) in enumerate(chunks):
+            input_text = "\n".join(chunk_lines)
+            proofreader.input_text = input_text
+
             pass_flag = False
             output_scores = {}  # これを最初に定義！
+
+            import difflib
+
+            input_lines = input_text.splitlines()
+            num_lines = len(input_lines)
+            output_texts_per_line = [[] for _ in range(num_lines)]
+
+            # 全出力を収集
+            output_texts_all = []
             for dict_index in range(proofreader.dict_count):
-                await proofreader.test_async(line, dict_index)
+#                print(f'dict_index = {dict_index}')
+                output_texts = await proofreader.test_async(input_text, dict_index)
+                output_texts_all.extend(output_texts)
 
-            # 全体のスコア評価（全文 or 文節一致が1つでもあれば PASS）
-            pass_flag = False
+            # 出力ごとに処理
+            for output_text, dict_name in output_texts_all:
+                output_lines = output_text.split('\\n')
 
-            output_scores = {}
+                # 行数が多すぎればカット、足りなければ空行追加
+                if len(output_lines) < num_lines:
+                    output_lines += [''] * (num_lines - len(output_lines))
+                elif len(output_lines) > num_lines:
+                    output_lines = output_lines[:num_lines]
 
-            for output_text, dictionary_name in proofreader.output_texts:
-                zenkaku_output_text = proofreader.concat_output_text(output_text)
-#                print(f'[DEBUG] zenkaku_output_text = {zenkaku_output_text}')
-#                print(f'[DEBUG] proofreader.output_texts = {proofreader.output_texts}')
-                score, _ = proofreader.get_score(zenkaku_output_text)
-                output_scores[(zenkaku_output_text, dictionary_name)] = score
-                if score == 100:
-                    pass_flag = True
-                    break
+                cursor = 0  # 最初の探索位置
+                SIMILARITY_THRESHOLD = 0.2
+                for out_line in output_lines:
+                    out_line_clean = out_line.strip()
+                    matched = False
 
-            # スコア評価：90以上のスコアが1つでもあれば PASS 候補
-            has_high_score = any(score >= 90 for score in output_scores.values())
-            # 文節一致
-            
-            has_chunk_match = proofreader.all_input_chunks_matched(proofreader.input_text, proofreader.output_texts)
+                    for i in range(cursor, num_lines):
+                        in_line_clean = input_lines[i].strip()
+                        sim = difflib.SequenceMatcher(None, in_line_clean, out_line_clean).ratio()
 
-            # どちらも満たしたときだけ PASS
-            if pass_flag == False :  # 最初の条件がPASSの場合はそのまま通す
-                pass_flag = has_high_score and has_chunk_match
-                
-            if pass_flag:
-                pass_count += 1
-                print(f'{proofreader.input_text}')
-                continue
-            else:
+                        if sim >= SIMILARITY_THRESHOLD:
+#                            print(f"[MATCH] 行 {i}: sim={sim:.2f} | 入力: {in_line_clean} | 出力: {out_line_clean}")
+                            output_texts_per_line[i].append((out_line, dict_name))
+                            cursor = i + 1  # 次の探索はその次から
+                            matched = True
+                            break
 
-#                print(f'{proofreader.input_text}')
-#                print(f' ひらがな: {proofreader.hiragana_text}')
-                #                    for output_text, dictionary_name in proofreader.output_texts:
-                
-                fail_count += 1
-                output_scores = {}
-
-                for output_text, dictionary_name in proofreader.output_texts:
-                    try:
-                        zenkaku_output_text = proofreader.concat_output_text(output_text)
-                        score, chunk_match = proofreader.get_score(zenkaku_output_text)
-
-                        #print(f'      {score:3.0f}: {zenkaku_output_text} [{dictionary_name}]')  # ← ターミナル確認用
+#                    if not matched:
+#                        print(f"[SKIP] 類似度不足で破棄: '{out_line}'")
                         
+            # すべての出力行のマッチ処理が終わったあと
+            # ↓ この行の後に入れる
+            # for output_text, dict_name in output_texts_all:
+            #     ...
+
+#            import difflib
+#            print("\n[DEBUG] === 類似度付き output_texts_per_line ===")
+#            for i, outputs in enumerate(output_texts_per_line):
+#                input_line = input_lines[i].strip()
+#                print(f"\nline {i}: {input_line}")
+                
+#                if outputs:
+#                    for text, model in outputs:
+#                        text_clean = text.strip()
+#                        sim = difflib.SequenceMatcher(None, input_line, text_clean).ratio()
+#                        print(f"  - 出力: {repr(text)}  [{model}]  スコア: {sim:.2f}")
+#                    else:
+#                        print("  - 出力なし")
+
+
+            proofreaders = []   # 初期化
+            # ★ここで Proofreader を行ごとにまとめて構築
+            for i in range(num_lines):
+                pr = Proofreader()
+                pr.input_text = input_lines[i]
+                pr.zenkaku_input_text = normalize(input_lines[i])
+                pr.output_texts = output_texts_per_line[i]  # ← すべての辞書出力がここにまとめて入る！
+#                print(f'output texts = {output_texts_per_line[i]}')
+                proofreaders.append(pr)
+#                print(f"[DEBUG] proofreaders に追加: 行 {i}: {pr.input_text}")
+
+            #ここから判定
+            for i, pr in enumerate(proofreaders):
+#                print(f"\nline : {i} {pr.input_text}")
+                output_scores = {}  # 初期化はここで一度だけ
+                pass_flag = False
+                seen_texts = set() 
+                for output_text, dictionary_name in pr.output_texts:
+                    try:
+                        zenkaku_output_text = pr.concat_output_text(output_text)
+                        score, chunk_match = pr.get_score(zenkaku_output_text)
+                        if(score == 100):
+                            pass_flag = True
                         match = re.match(r'T(\d+)', dictionary_name)
                         if match:
                             model_index = int(match.group(1))
-                            model_name = proofreader.t5_names[model_index]
+                            model_name = pr.t5_names[model_index]
                         else:
                             model_name = dictionary_name
-                            
-                        output_scores[(zenkaku_output_text, model_name)] = score
+
+                        if zenkaku_output_text not in seen_texts:
+                            output_scores[(zenkaku_output_text, model_name)] = score
+                            seen_texts.add(zenkaku_output_text)
                             
                     except Exception as e:
-                        print(f"[ERROR] 変換失敗: {e} / output_text={output_text} / dict={dictionary_name}")                
-
-                        # スコアで並び替え（高得点順）
+                        print(f"[ERROR] 変換失敗: {e} / output_text={output_text} / dict={dictionary_name}")
+                chunk_match,unmatched_chunks = check_chunk_match(pr)
+                seen_texts = set()                         
+                # スコアで並び替え（高得点順)
                 sorted_scores = sorted(output_scores.items(), key=lambda x: x[1], reverse=True)
-#                    print(f' [DEBUG] sorted_scores : {sorted_scores}  output_scores : {output_scores}')
-                    # 出力
-#                for (zenkaku_output_text, model_name), score in sorted_scores:
-#                    print(f'      {score:3.0f}: {zenkaku_output_text} [{model_name}]')
-                seen_texts = set()
-                print(f'{proofreader.highlight_diff(proofreader.input_text,zenkaku_output_text)}') 
-                for (zenkaku_output_text, model_name), score in sorted_scores:
-                    if zenkaku_output_text in seen_texts:
-                        continue  # すでに出力済みの文はスキップ
-                    seen_texts.add(zenkaku_output_text)
-                    #                    print(f'      {score:3.0f}: {zenkaku_output_text} [{model_name}]')
-                    if has_high_score == True:
-                        print(f'\033[31m{zenkaku_output_text}\033[0m : {score:3.0f} [{model_name}] ')
-                    else:
-                        print(f'{RED}{zenkaku_output_text}{RESET} : {RED}{RED_BOLD}{score:3.0f}{RESET} [{model_name}] ')
-                                   
-            if progress_bar:
-                progress_bar.set_postfix({'怪しい行': fail_count})
+                #                print(f'[DEBUG] sorted score = {sorted_scores}')
+                #                has_high_score = any(s >= 80 for s in output_scores.values())
+                has_high_score = True
+#                print(f' [DEBUG]  has_high_score {has_high_score}  chunk_match {chunk_match}')
+                if(pass_flag or chunk_match):
+#                    print(f'PASS: pass_flag {pass_flag}  has_high_score {has_high_score}  chunk_match {chunk_match}')
+                    print(f'{pr.input_text}')
+                    pass_count += 1
+                else:
+#                    print(f'{pr.highlight_diff(pr.input_text, zenkaku_output_text)}')
+                    print(f'{BOLD}{pr.highlight_unmatched_chunks(pr.input_text, unmatched_chunks)}{RESET}')
+#                    print(f' FAIL: has_high_score {has_high_score}  chunk_match {chunk_match}')
+                    fail_count += 1
+                    for (zenkaku_output_text, model_name), score in sorted_scores:
+                        if zenkaku_output_text in seen_texts:
+                            continue  # すでに出力済みの文はスキップ
+                        seen_texts.add(zenkaku_output_text)
+                        #                        print(f'      {score:3.0f}: {zenkaku_output_text} [{model_name}]')
+                        if score < 50:
+                            continue
+                        if has_high_score == True:
+                            print(f'\033[31m{zenkaku_output_text}\033[0m : {score:3.0f} [{model_name}] ')
+                        else:
+                            print(f'{RED}{zenkaku_output_text}{RESET} : {RED}{BOLD}{score:3.0f}{RESET} [{model_name}] ')
+
+                            
+        if progress_bar:
+            progress_bar.set_postfix({'怪しい行': fail_count})
 
         print(f'\n       FAIL COUNT :  \033[31m{fail_count:3.0f}\033[0m    PASS COUNT : {pass_count:3.0f}\n')
-
 
         if buffer:        
             sys.stdout = sys.__stdout__  # 元に戻す
@@ -187,8 +349,9 @@ if __name__ == "__main__":
 
             with open(args.output, 'w', encoding='utf-8') as f:
                 f.write(html_output) 
-
+                            
         await proofreader.shutdown_async()
+
 
         
 # 他の関数やクラスの外に書く！
@@ -199,5 +362,6 @@ if __name__ == "__main__":
     asyncio.run(main())        
 
 #        asyncio.run(main())
+
 
 

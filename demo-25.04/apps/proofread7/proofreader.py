@@ -12,9 +12,36 @@ import jaconv
 import MeCab
 import difflib
 
-import unicodedata
 
+import unicodedata
 import re
+from difflib import SequenceMatcher
+
+def normalize_ellipsis(text: str) -> str:
+    # 半角ピリオド3つ以上 → 全角三点リーダ（U+2026）に置換（2つ連続に統一）
+    import re
+    return re.sub(r'\.{3,}', '……', text)
+
+def normalize_and_compare(a, b):
+#    print(f' normalize and compare :  IN1:{a}  IN2:{b}') 
+    a_norm = unicodedata.normalize('NFKC', a)
+    b_norm = unicodedata.normalize('NFKC', b)
+    return a_norm == b_norm
+
+def normalize_punctuation(text):
+    # 「…」を「.」に変換、「。」はそのまま
+    text = text.replace('…', '.')
+    # 「.」が連続している箇所を「...」に正規化（長さ統一）
+    text = re.sub(r'\.{2,}', '...', text)
+    return text
+
+
+def is_similar(text1, text2, threshold=0.9):
+    norm1 = normalize_punctuation(text1)
+    norm2 = normalize_punctuation(text2)
+    # 類似度計算
+    similarity = SequenceMatcher(None, norm1, norm2).ratio()
+    return similarity >= threshold, similarity
 
 def normalize_text(text):
     text = remove_scores(text)
@@ -46,6 +73,82 @@ def parse_blindx_texts(blindx_texts):
         text = ''.join(tokens)
         texts.append(text)
     return texts
+
+
+def check_chunk_match(pr):
+    try:
+        wakati_tagger = MeCab.Tagger("-Owakati")
+        norm_input = normalize_text(pr.input_text)
+        input_chunks = wakati_tagger.parse(norm_input)
+
+        if input_chunks is None:
+            raise ValueError("MeCab parse returned None for input")
+
+        input_chunks = input_chunks.strip().split()
+#        print(f"[DEBUG] input chunks: {input_chunks}")
+
+        # 全ての output_text を1つにまとめて分かち書きし、結合
+        all_output_chunks = []
+        for output_text, _ in pr.output_texts:
+            norm_output = normalize_text(output_text)
+            out_chunks = wakati_tagger.parse(norm_output)
+            if not out_chunks:
+                continue
+            out_chunks = out_chunks.strip().split()
+            all_output_chunks.extend(out_chunks)
+
+        joined_output = ''.join(all_output_chunks)
+#        print(f"[DEBUG] joined all output = {joined_output}")
+
+        unmatched_chunks = [chunk for chunk in input_chunks if chunk not in joined_output]
+
+        if not unmatched_chunks:
+#            print(f"[DEBUG] ✅ chunk_match 成立")
+            return True, []
+        else:
+#            print(f"[DEBUG] ❌ unmatched chunks: {unmatched_chunks}")
+            return False, unmatched_chunks  # マッチ失敗、unmatched のリスト付き
+
+    except Exception as e:
+        print(f"[ERROR] MeCab chunk_match failed: {e}")
+        return False
+
+def check_chunk_match_old(pr):
+    try:
+        wakati_tagger = MeCab.Tagger("-Owakati")
+        norm_input = normalize_text(pr.input_text)
+        input_chunks = wakati_tagger.parse(norm_input)
+
+        if input_chunks is None:
+            raise ValueError("MeCab parse returned None for input")
+
+        input_chunks = input_chunks.strip().split()
+        print(f"[DEBUG] input chunks: {input_chunks}")
+
+        for output_text, _ in pr.output_texts:
+            print(f"[DEBUG] output text = {output_text}")
+            norm_output = normalize_text(output_text)
+            out_chunks = wakati_tagger.parse(norm_output)
+            if not out_chunks:
+                continue
+
+            out_chunks = out_chunks.strip().split()
+            joined_output = ''.join(out_chunks)
+            print(f"[DEBUG] joined output = {joined_output}")
+
+            # すべての input の文節が joined_output に含まれるか
+            unmatched_chunks = [chunk for chunk in input_chunks if chunk not in joined_output]
+            if not unmatched_chunks:
+                print(f"[DEBUG] ✅ chunk_match 成立")
+                return True
+            else:
+                print(f"[DEBUG] ❌ unmatched chunks: {unmatched_chunks}")
+
+    except Exception as e:
+        print(f"[ERROR] MeCab chunk_match failed: {e}")
+
+    print(f"[DEBUG] ❌ chunk_match 不成立")
+    return False
 
 
 class Proofreader():
@@ -84,27 +187,69 @@ class Proofreader():
         result_text = ''.join(tokens)
         return jaconv.h2z(result_text, ascii=True, digit=True)
 
+
+    # 文節一致判定：output_texts の中に input_text の文節をすべて含むものが一つでもあるか？
     def get_score(self, zenkaku_output_text):
-        overall_score = fuzz.ratio(self.zenkaku_input_text, zenkaku_output_text)
-#        print(f' zenkaku output text : {zenkaku_output_text}')
-#        print(f' zenkaku input text : {self.zenkaku_input_text}') 
+        chunk_match = False
+        try:
+            # 入力の存在チェックと前処理
+            if self.zenkaku_input_text is None:
+                raise ValueError("zenkaku_input_text が None です")
+            if zenkaku_output_text is None:
+                raise ValueError("zenkaku_output_text が None です")
 
-        wakati_tagger = MeCab.Tagger("-Owakati")
-        orig_chunks = wakati_tagger.parse(self.zenkaku_input_text).strip().split()
-        out_chunks = wakati_tagger.parse(zenkaku_output_text).strip().split()  
-        chunk_matched = len(set(orig_chunks) & set(out_chunks)) > 0
-#        print(f' overall score : {overall_score}  chunk_matched = {chunk_matched}')
+            input_text = self.zenkaku_input_text.strip()
+            output_text = zenkaku_output_text.strip()
 
-        self.last_score = overall_score  # ← スコアを保持
-        self.last_chunk_match = chunk_matched  # ← 必要なら文節一致も
+            norm_input = normalize_ellipsis(input_text)
+            norm_output = normalize_ellipsis(output_text)
 
-#        print(f'overall score : {overall_score}  chunk_matched = {chunk_matched}')
-        return overall_score, chunk_matched
+#            print(f"[DEBUG:get_score] input = {repr(input_text)}")
+#            print(f"[DEBUG:get_score] output = {repr(output_text)}")
 
-    def all_input_chunks_matched(self, input_text, output_texts):
+            # 完全一致の場合は即座に100点
+            if norm_input == norm_output:
+#                print("[DEBUG:get_score] 完全一致 → score=100")
+                return 100, True
+
+
+
+            # 類似度スコアの計算
+            try:
+                overall_score = fuzz.ratio(norm_input, norm_output)
+#                print(f"[DEBUG:get_score] fuzzy score = {overall_score}")
+            except Exception as e:
+#                print(f"[ERROR] fuzz.ratio failed: {e}")
+                raise
+
+            # 文節一致チェック（MeCab）
+            try:
+                wakati_tagger = MeCab.Tagger("-Owakati")
+                orig_chunks = wakati_tagger.parse(norm_input)
+                out_chunks = wakati_tagger.parse(norm_output)
+
+                if orig_chunks is None or out_chunks is None:
+                    raise ValueError("MeCab parse returned None")
+
+                orig_chunks = orig_chunks.strip().split()
+                out_chunks = out_chunks.strip().split()
+                chunk_match = len(set(orig_chunks) & set(out_chunks)) > 0
+            except Exception as e:
+                print(f"[ERROR] MeCab parse failed: {e}")
+                chunk_match = False
+
+ #           print(f"[DEBUG:get_score] returning score = {overall_score}, chunk_match = {chunk_match}")
+            return overall_score, chunk_match
+
+        except Exception as e:
+            print(f"[ERROR] get_score 内部エラー: {e}")
+            raise
+
+    
+    def all_input_chunks_matched_old(self, input_text, output_texts):
         input_chunks = self.wakati_tagger.parse(input_text).strip().split()
         input_chunks = [normalize_text(chunk) for chunk in input_chunks if chunk.strip()]
-        self.unmatched_chunks = []
+
         # 出力側の merged text 群をすべて正規化して用意
         merged_outputs = [
             normalize_text(remove_scores(output_text))
@@ -120,7 +265,6 @@ class Proofreader():
 
         if unmatched_chunks:
 #            print(f"[DEBUG] unmatched chunks: {unmatched_chunks}")
-            self.unmatched_chunks = unmatched_chunks
             return False
 
 #        print(f"[DEBUG] all chunks matched in some output")
@@ -128,51 +272,87 @@ class Proofreader():
 
 
     import difflib
-    import MeCab
 
-    def highlight_diff(self, a, b):
-        RED = '\033[31m'
-        RED_BOLD = '\033[1;31m'
+    def highlight_unmatched_chunks(self, input_text, unmatched_chunks):
+        BOLD_RED = '\033[31;1m'  # 太字・赤
         RESET = '\033[0m'
+        BOLD = '\033[1m'
+        RESUME = '\033[39m'  #色を標準色に
 
-        unmatched_chunks = self.unmatched_chunks
-        final_output = a
-
-        # ANSIコードの後処理として BOLD を追加（文字列レベル）
+        highlighted = input_text
         for chunk in unmatched_chunks:
-            final_output = final_output.replace(chunk, f"{RED_BOLD}{chunk}{RESET}")
-        return final_output
+            # chunk が複数回出る可能性があるため、すべて置換（最初のだけなら 1 を指定）
+            highlighted = highlighted.replace(chunk, f"{BOLD_RED}{chunk}{RESUME}")
+        return highlighted
+    
+    # def highlight_diff(self,a, b):
+    #     RED = '\033[31m'
+    #     RESET = '\033[0m'
 
+    #     matcher = difflib.SequenceMatcher(None, a, b)
+    #     result = []
 
-    async def test_async(self, input_text, dict_index, num_beams = 2):
-#        print(f"[DEBUG] raw input_text: {input_text}")
+    #     for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+    #         if tag == 'equal':
+    #             result.append(a[i1:i2])
+    #         elif tag == 'replace' or tag == 'delete':
+    #             result.append(f'{RED}{a[i1:i2]}{RESET}')
+    #             # 'insert' は A にはない部分なので無視
+    #     return ''.join(result)
+
+    async def test_async(self, input_text, dict_index, num_beams=2):
         self.input_text = input_text
-#        self.hiragana_text = self.kanhira.convert(input_text)
-        escaped_input_text = input_text.replace(':', '<COLON>')
-        self.hiragana_text = self.kanhira.convert(escaped_input_text)
-        self.zenkaku_input_text = jaconv.h2z(input_text, ascii=True, digit=True)
-#        print(f"[DEBUG] hiragana_text: {self.input_text}")
-        dict_cmd = f'T{dict_index}:{num_beams}+:'
-        blindx_texts = await self.inference.send_recv_async(dict_cmd, self.hiragana_text)
-#        print(f"[DEBUG] blindx_texts = {blindx_texts}") 
-#        output_texts = blindx_texts.split(':')
-#        print(f"[DEBUG] 辞書名 = {self.dict_names[dict_index]}")
-        parsed_outputs = parse_blindx_texts(blindx_texts)
+        self.output_texts = []
 
-        for output_text in parsed_outputs:  # ← こちらに直す
-            output_text = output_text.replace('<COLON>', ':')
-            self.output_texts.append((output_text, self.dict_names[dict_index]))
-            zenkaku_output_text = self.concat_output_text(output_text)
-            score, _ = self.get_score(zenkaku_output_text)
-        if score == 100:
-            result = True
-            self.passed_index += 1
+        try:
+            # 入力の前処理（コロンのエスケープなど）
+            escaped_input_text = input_text.replace(':', '<COLON>')
+            self.hiragana_text = self.kanhira.convert(escaped_input_text)
+            self.zenkaku_input_text = jaconv.h2z(input_text, ascii=True, digit=True)
 
-#        for output_text in output_texts:
-#            self.output_texts.append((output_text, f'T{dict_index}'))
+            # モデル呼び出し
+            dict_cmd = f'T{dict_index}:{num_beams}+:'
+            blindx_texts = await self.inference.send_recv_async(dict_cmd, self.hiragana_text)
 
-        # ❌ return result はやめる（ここで判定しない）
+            # パース
+            parsed_outputs = parse_blindx_texts(blindx_texts)
+            if not parsed_outputs:
+                print(f"[WARN] 出力なし: dict={self.dict_names[dict_index]}")
+                return []
 
+            # 出力整形
+            for output_text in parsed_outputs:
+                if not output_text or output_text.strip().startswith("<pad>"):
+                    print(f"[SKIP] 無効出力（padのみ？）: dict={self.dict_names[dict_index]}")
+                    continue
+                output_text = output_text.replace('<COLON>', ':')
+                self.output_texts.append((output_text, self.dict_names[dict_index]))
+                
+            return self.output_texts
+
+        except Exception as e:
+            print(f"[ERROR] test_async failed: {e}")
+            return []
+
+#     async def test_async(self, input_text, dict_index, num_beams = 2):
+# #        print(f"[DEBUG] raw input_text: {input_text}")
+#         self.input_text = input_text
+# #        self.hiragana_text = self.kanhira.convert(input_text)
+#         escaped_input_text = input_text.replace(':', '<COLON>')
+#         self.hiragana_text = self.kanhira.convert(escaped_input_text)
+#         self.zenkaku_input_text = jaconv.h2z(input_text, ascii=True, digit=True)
+# #        print(f"[DEBUG] hiragana_text: {self.hiragana_text}")
+#         dict_cmd = f'T{dict_index}:{num_beams}+:'
+#         blindx_texts = await self.inference.send_recv_async(dict_cmd, self.hiragana_text)
+# #        print(f"[DEBUG] blindx_texts = {blindx_texts}") 
+# #        output_texts = blindx_texts.split(':')
+# #        print(f"[DEBUG] 辞書名 = {self.dict_names[dict_index]}")
+#         parsed_outputs = parse_blindx_texts(blindx_texts)
+
+#         for output_text in parsed_outputs:  # ← こちらに直す
+#             output_text = output_text.replace('<COLON>', ':')
+#             self.output_texts.append((output_text, self.dict_names[dict_index]))
+#             zenkaku_output_text = self.concat_output_text(output_text)
 
     async def set_pattern_async(self, pattern):
         self.kanhira.set_pattern(pattern)
