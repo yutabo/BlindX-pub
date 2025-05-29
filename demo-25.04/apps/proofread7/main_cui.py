@@ -68,10 +68,49 @@ if __name__ == "__main__":
     #    parser.add_argument('--hotwords', nargs='+', help='hot words')
     parser.add_argument('--encoding', default='auto', help='text encoding (e.g., utf-8, utf-16-le, or auto)')
     parser.add_argument('--hotfile', help='hot file')
+    parser.add_argument('--max_chars', help='max chars　何文字詰め込むか')
+    parser.add_argument('--num_beams', default=2, help='max beams : 何個候補を出すか')
     args = parser.parse_args()
 
+    def chunk_lines_by_char_limit(lines, max_chars=None):
+        if max_chars is None:
+            max_chars = 256
 
-    def chunk_lines_by_char_limit(lines, max_chars=256):
+        chunks = []
+        current_chunk = []
+        current_length = 0
+        current_indices = []
+
+        for idx, line in enumerate(lines):
+            line_length = len(line)
+
+            # チャンクが空（最初の行）なら、長さ無視で入れる
+            if not current_chunk:
+                current_chunk.append(line)
+                current_indices.append(idx)
+                current_length += line_length
+                continue
+
+            # 現在のチャンクに収まるなら追加
+            if current_length + line_length <= max_chars:
+                current_chunk.append(line)
+                current_indices.append(idx)
+                current_length += line_length
+            else:
+                # 入れたらオーバーするが、現在のチャンクが空なら強制的に入れる
+                chunks.append((current_chunk.copy(), current_indices.copy()))
+                current_chunk = [line]
+                current_indices = [idx]
+                current_length = line_length
+
+        if current_chunk:
+            chunks.append((current_chunk.copy(), current_indices.copy()))
+
+        return chunks
+
+    def chunk_lines_by_char_limit_old(lines, max_chars=None):
+        if max_chars is None:
+            max_chars = 256
         chunks = []
         current_chunk = []
         current_length = 0
@@ -134,23 +173,6 @@ if __name__ == "__main__":
         hotwords = text.strip().split()
         return hotwords
     
-    # def read_lines(name):
-    #     with open(name, 'r', encoding=args.encoding) as f:
-    #         lines = []
-    #         for input_text in f:
-    #             line = ''
-    #             for char in input_text.rstrip('\n'):
-    #                 if ord(char) != 65279:
-    #                     line += char
-    #             lines.append(line)
-    #         return lines
-
-    # def load_hotwords(filepath):
-    #     with open(filepath, 'r', encoding='utf-8') as f:
-    #         text = f.read()
-    #         hotwords = text.strip().split()
-    #     return hotwords
-
     async def main():
         misc.set_logger('kousei', logging.WARN)
         RED = '\033[31m'
@@ -166,12 +188,15 @@ if __name__ == "__main__":
             hotwords += args.hotwords
         if args.hotfile:
             hotwords += load_hotwords(args.hotfile)
+        max_chars = int(args.max_chars) if args.max_chars else None
 
         if args.echo:
             lines = [args.echo]
         else:
-            lines = read_lines(args.input, encoding=args.encoding)            
-#            lines = read_lines(args.input)
+            lines = read_lines(args.input, encoding=args.encoding) 
+            #            lines = read_lines(args.input)
+        if args.num_beams:
+            num_of_beams = args.num_beams
 
         proofreader  = Proofreader()
         proofreaders = []
@@ -192,7 +217,8 @@ if __name__ == "__main__":
         fail_count = 0
         pass_count = 0
 
-        chunks = chunk_lines_by_char_limit(lines)
+        chunks = chunk_lines_by_char_limit(lines, max_chars=max_chars)
+        
 
         #        print(f"[DEBUG] チャンク数 = {len(chunks)}")
         print(f"hotwords : {' '.join(hotwords)}")
@@ -216,7 +242,7 @@ if __name__ == "__main__":
             output_texts_all = []
             for dict_index in range(proofreader.dict_count):
 #                print(f'dict_index = {dict_index}')
-                output_texts = await proofreader.test_async(input_text, dict_index)
+                output_texts = await proofreader.test_async(input_text, dict_index , num_of_beams)
                 output_texts_all.extend(output_texts)
 
             # 出力ごとに処理
@@ -362,6 +388,4 @@ if __name__ == "__main__":
     asyncio.run(main())        
 
 #        asyncio.run(main())
-
-
 

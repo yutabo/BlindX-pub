@@ -77,7 +77,8 @@ def parse_blindx_texts(blindx_texts):
 
 def check_chunk_match(pr):
     try:
-        wakati_tagger = MeCab.Tagger("-Owakati")
+#        wakati_tagger = MeCab.Tagger("-Owakati")
+        wakati_tagger = MeCab.Tagger("-Owakati -d /opt/homebrew/lib/mecab/dic/mecab-ipadic-neologd")
         norm_input = normalize_text(pr.input_text)
         input_chunks = wakati_tagger.parse(norm_input)
 
@@ -115,7 +116,8 @@ def check_chunk_match(pr):
 
 def check_chunk_match_old(pr):
     try:
-        wakati_tagger = MeCab.Tagger("-Owakati")
+#        wakati_tagger = MeCab.Tagger("-Owakati")
+        wakati_tagger = MeCab.Tagger("-Owakati -d /opt/homebrew/lib/mecab/dic/mecab-ipadic-neologd")
         norm_input = normalize_text(pr.input_text)
         input_chunks = wakati_tagger.parse(norm_input)
 
@@ -157,7 +159,9 @@ class Proofreader():
         self.kanhira = Kanhira()
         self.inference = RemoteInference()
         self.output_texts = []        
-        self.wakati_tagger = MeCab.Tagger("-Owakati") 
+#        self.wakati_tagger = MeCab.Tagger("-Owakati")
+        wakati_tagger = MeCab.Tagger("-Owakati -d /opt/homebrew/lib/mecab/dic/mecab-ipadic-neologd")
+#        print(f'[DEBUG] Neologd Start ')
         self.passed_index = 0
 
     @property
@@ -224,7 +228,8 @@ class Proofreader():
 
             # 文節一致チェック（MeCab）
             try:
-                wakati_tagger = MeCab.Tagger("-Owakati")
+                #wakati_tagger = MeCab.Tagger("-Owakati")
+                wakati_tagger = MeCab.Tagger("-Owakati -d /opt/homebrew/lib/mecab/dic/mecab-ipadic-neologd")
                 orig_chunks = wakati_tagger.parse(norm_input)
                 out_chunks = wakati_tagger.parse(norm_output)
 
@@ -333,26 +338,6 @@ class Proofreader():
         except Exception as e:
             print(f"[ERROR] test_async failed: {e}")
             return []
-
-#     async def test_async(self, input_text, dict_index, num_beams = 2):
-# #        print(f"[DEBUG] raw input_text: {input_text}")
-#         self.input_text = input_text
-# #        self.hiragana_text = self.kanhira.convert(input_text)
-#         escaped_input_text = input_text.replace(':', '<COLON>')
-#         self.hiragana_text = self.kanhira.convert(escaped_input_text)
-#         self.zenkaku_input_text = jaconv.h2z(input_text, ascii=True, digit=True)
-# #        print(f"[DEBUG] hiragana_text: {self.hiragana_text}")
-#         dict_cmd = f'T{dict_index}:{num_beams}+:'
-#         blindx_texts = await self.inference.send_recv_async(dict_cmd, self.hiragana_text)
-# #        print(f"[DEBUG] blindx_texts = {blindx_texts}") 
-# #        output_texts = blindx_texts.split(':')
-# #        print(f"[DEBUG] 辞書名 = {self.dict_names[dict_index]}")
-#         parsed_outputs = parse_blindx_texts(blindx_texts)
-
-#         for output_text in parsed_outputs:  # ← こちらに直す
-#             output_text = output_text.replace('<COLON>', ':')
-#             self.output_texts.append((output_text, self.dict_names[dict_index]))
-#             zenkaku_output_text = self.concat_output_text(output_text)
 
     async def set_pattern_async(self, pattern):
         self.kanhira.set_pattern(pattern)
