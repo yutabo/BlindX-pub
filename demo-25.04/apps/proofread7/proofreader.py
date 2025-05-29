@@ -17,6 +17,16 @@ import unicodedata
 import re
 from difflib import SequenceMatcher
 
+BLUE = '\033[38;5;25m'         # 青系前景（.ansi21 相当）
+CYAN = '\033[36m'            # シアン 校正の入ったもとテキスト
+YELLOW = '\033[38;5;226m'    # 黄色　校正箇所
+SOFT_YELLOW = '\033[38;5;143m'
+RED = '\033[31m'
+BOLD = '\033[1m'
+BOLD_RED = '\033[31;1m'  # 太字・赤
+RESET = '\033[0m'
+RESUME = '\033[39m'  #色を標準色に
+
 def normalize_ellipsis(text: str) -> str:
     # 半角ピリオド3つ以上 → 全角三点リーダ（U+2026）に置換（2つ連続に統一）
     import re
@@ -279,32 +289,24 @@ class Proofreader():
     import difflib
 
     def highlight_unmatched_chunks(self, input_text, unmatched_chunks):
-        BOLD_RED = '\033[31;1m'  # 太字・赤
-        RESET = '\033[0m'
-        BOLD = '\033[1m'
-        RESUME = '\033[39m'  #色を標準色に
-
         highlighted = input_text
         for chunk in unmatched_chunks:
             # chunk が複数回出る可能性があるため、すべて置換（最初のだけなら 1 を指定）
-            highlighted = highlighted.replace(chunk, f"{BOLD_RED}{chunk}{RESUME}")
+            highlighted = highlighted.replace(chunk, f"{SOFT_YELLOW}{chunk}{CYAN}")
         return highlighted
     
-    # def highlight_diff(self,a, b):
-    #     RED = '\033[31m'
-    #     RESET = '\033[0m'
-
-    #     matcher = difflib.SequenceMatcher(None, a, b)
-    #     result = []
-
-    #     for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-    #         if tag == 'equal':
-    #             result.append(a[i1:i2])
-    #         elif tag == 'replace' or tag == 'delete':
-    #             result.append(f'{RED}{a[i1:i2]}{RESET}')
-    #             # 'insert' は A にはない部分なので無視
-    #     return ''.join(result)
-
+    def highlight_diff(self,a, b):
+        matcher = difflib.SequenceMatcher(None, a, b)
+        result = []
+        
+        for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+            if tag == 'equal':
+                result.append(a[i1:i2])
+            elif tag == 'replace' or tag == 'delete':
+                result.append(f'{SOFT_YELLOW}{a[i1:i2]}{RED}')
+                # 'insert' は A にはない部分なので無視
+        return ''.join(result)
+            
     async def test_async(self, input_text, dict_index, num_beams=2):
         self.input_text = input_text
         self.output_texts = []

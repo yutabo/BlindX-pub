@@ -304,7 +304,17 @@ if __name__ == "__main__":
                 pr.output_texts = output_texts_per_line[i]  # ← すべての辞書出力がここにまとめて入る！
 #                print(f'output texts = {output_texts_per_line[i]}')
                 proofreaders.append(pr)
-#                print(f"[DEBUG] proofreaders に追加: 行 {i}: {pr.input_text}")
+                #                print(f"[DEBUG] proofreaders に追加: 行 {i}: {pr.input_text}")
+
+
+            BLUE = '\033[38;5;25m'         # 青系前景（.ansi21 相当）
+            CYAN = '\033[36m'            # シアン 校正の入ったもとテキスト
+            YELLOW = '\033[38;5;226m'    # 黄色　校正箇所
+            BOLD_RED = '\033[31;1m'  # 太字・赤
+            RESET = '\033[0m'
+            BOLD = '\033[1m'
+            RESUME = '\033[39m'  #色を標準色に
+                
 
             #ここから判定
             for i, pr in enumerate(proofreaders):
@@ -345,7 +355,7 @@ if __name__ == "__main__":
                     pass_count += 1
                 else:
 #                    print(f'{pr.highlight_diff(pr.input_text, zenkaku_output_text)}')
-                    print(f'{BOLD}{pr.highlight_unmatched_chunks(pr.input_text, unmatched_chunks)}{RESET}')
+                    print(f'{BOLD}{CYAN}{pr.highlight_unmatched_chunks(pr.input_text, unmatched_chunks)}{RESET}')
 #                    print(f' FAIL: has_high_score {has_high_score}  chunk_match {chunk_match}')
                     fail_count += 1
                     for (zenkaku_output_text, model_name), score in sorted_scores:
@@ -356,7 +366,7 @@ if __name__ == "__main__":
                         if score < 50:
                             continue
                         if has_high_score == True:
-                            print(f'\033[31m{zenkaku_output_text}\033[0m : {score:3.0f} [{model_name}] ')
+                            print(f'\033[31m{pr.highlight_diff(zenkaku_output_text,input_text)}\033[0m : {score:3.0f} [{model_name}] ')
                         else:
                             print(f'{RED}{zenkaku_output_text}{RESET} : {RED}{BOLD}{score:3.0f}{RESET} [{model_name}] ')
 
