@@ -82,12 +82,10 @@ if __name__ == "__main__":
     parser.add_argument('--num_beams', default=2, help='max beams : 何個候補を出すか')
     args = parser.parse_args()
 
-
-
     def chunk_lines_by_char_limit(lines, max_chars=None):
         if max_chars is None or max_chars <= 0:
             # max_charsが0以下なら、1文ごとにチャンク化
-            return [([line], [idx]) for idx, line in enumerate(lines) if line.strip()]            
+            return [([line], [idx]) for idx, line in enumerate(lines) if line.strip()] 
 
         chunks = []
         current_chunk = []
@@ -97,6 +95,8 @@ if __name__ == "__main__":
         for idx, line in enumerate(lines):
             line_length = len(line)
 
+#            print(f'[DEBUG] line = {line[:30]}')
+            
             # 最初の行は無条件に入れる
             if not current_chunk:
                 current_chunk.append(line)

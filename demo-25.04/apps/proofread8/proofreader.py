@@ -330,7 +330,7 @@ class Proofreader():
             # 出力整形
             for output_text in parsed_outputs:
                 if not output_text or output_text.strip().startswith("<pad>"):
-                    print(f"[SKIP] 無効出力（padのみ？）: dict={self.dict_names[dict_index]}, chunk={input_text[:30]}")
+#                    print(f"[SKIP] 無効出力（padのみ？）: dict={self.dict_names[dict_index]}, chunk={input_text[:30]}")
                     continue
                 output_text = output_text.replace('<COLON>', ':')
                 self.output_texts.append((output_text, self.dict_names[dict_index]))
