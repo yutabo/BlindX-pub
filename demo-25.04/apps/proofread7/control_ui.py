@@ -1,109 +1,114 @@
 import gradio as gr
-from pathlib import Path
 import subprocess
-import datetime
-import mimetypes
+from datetime import datetime
+from pathlib import Path
 
-# MIMEの追加（.htmlがリンクで開けるように）
-mimetypes.add_type('text/html', '.html')
+# Hotwords保存
+def save_hotwords(global_text, local_text, filepath="hotwords.txt"):
+    combined = global_text.strip() + "\n" + local_text.strip() + "\n"
+    Path(filepath).write_text(combined, encoding="utf-8")
 
-# ファイルの中身を読み込む関数
-def load_hotwords(path):
-    try:
-        return Path(path).read_text(encoding="utf-8")
-    except Exception:
-        return ""
+# HTMLリンク生成
+def make_html_links(paths):
+    links = []
+    for p in paths:
+        name = Path(p).name
+        href = f"/output/{name}"
+        links.append(f'<a href="{href}" target="_blank">{name}</a>')
+    return "<br>".join(links)
 
-def save_and_run(global_text, local_text, files):
-    # hotwords.txt を保存
-    
-    hotwords_text = global_text.strip() + "\n" + local_text.strip()
-    all_hotwords = list(set(global_text.strip().splitlines() + local_text.strip().splitlines()))
-    if not hotwords_text.endswith("\n"):
-        hotwords_text += "\n"
-    with open("hotwords.txt", "w", encoding="utf-8") as f:
-        f.write(hotwords_text)
-    
-    hotword_path = Path("hotwords.txt")
-    hotword_path.write_text("\n".join(all_hotwords), encoding="utf-8")
+# 実行処理
+def run_proofreader_stream(global_text, local_text, files):
+    log = ""
+    links = []
+
+    if not files:
+        log += "❌ 入力ファイルがありません\n"
+        yield "", log
+        return
+
+    save_hotwords(global_text, local_text)
 
     output_dir = Path("output_html")
     output_dir.mkdir(exist_ok=True)
 
-    output_files = []
-    logs = []
-
     for file in files:
-        input_path = Path(file.name)
-        output_path = output_dir / f"{input_path.name}.html"
+        name = Path(file.name).name
+        output_name = name + ".html"
+        out_file = output_dir / output_name
 
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        cmd = [
-            "python3", "main_cui.py",
-            "-i", str(input_path),
-            "--output", str(output_path),
-            "--hotfile", str(hotword_path)
-        ]
-        logs.append(f"[{timestamp}] 実行: {' '.join(cmd)}")
+        cmd = ["python3", "main_cui.py", "--input", file.name, "--hotfile", "hotwords.txt", "--output", str(out_file)]
 
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        if result.returncode == 0:
-            output_files.append(str(output_path))  # ← ここが今回の重要修正点
-        else:
-            logs.append(f"⚠️ エラー: {result.stderr.strip()}")
+        log += f"[{datetime.now().strftime('%H:%M:%S')}] 実行: {' '.join(cmd)}\n"
+        yield make_html_links(links), log
 
-    return output_files, "\n".join(logs)
+        try:
+            subprocess.run(cmd, check=True)
+            links.append(output_name)
+            log += f"✅ 完了: {name}\n"
+        except subprocess.CalledProcessError:
+            log += f"❌ エラー: {name}\n"
 
+        yield make_html_links(links), log
 
+    if not links:
+        log += "⚠️ 出力ファイルが作成されませんでした\n"
+        yield "", log
+
+# Gradio UI
 with gr.Blocks(css="""
 #input-pane .gr-file {
     height: 620px;
+    min-height: 620px;
     overflow-y: auto;
 }
-#output-links-box {
+#output-box {
     border: 1px solid #ccc;
     padding: 10px;
-    min-height: 620px;
+    min-height: 200px;
 }
 """) as app:
     gr.Markdown("## 📝 校正ツール Web UI")
 
-    # hotwords.txt をここで読む
-    try:
-        hotword_text = Path("hotwords.txt").read_text(encoding="utf-8")
-#        print(f"hotwords.txt : {hotword_text}")  # ログファイルや別表示にもしたければここを拡張  
-    except Exception:
-        hotword_text = f""  # UIに表示させたいなら "" にしておく（ログ出力は別途）
-        print(f"hotwords.txt の読み込み失敗: {e}")  # ログファイルや別表示にもしたければここを拡張
-
     with gr.Row():
         start_button = gr.Button("▶ START")
         stop_button = gr.Button("⏸ STOP")
-        resume_button = gr.Button("⏵ 再開")
+        resume_button = gr.Button("⏵ RESUME")
 
     with gr.Row():
-        with gr.Column(scale=15):
-            global_hotwords = gr.Textbox(label="🌍 Global Hotwords", lines=30, interactive=True)
-        with gr.Column(scale=15):
-            local_hotwords = gr.Textbox(
-                label="📄 Local Hotwords",
-                lines=30,
-                interactive=True,
-                value= hotword_text)  # ← ここで読み込む
+        global_hotwords = gr.Textbox(label="🌍 Global Hotwords", lines=30, scale=1)
+        local_hotwords = gr.Textbox(label="📄 Local Hotwords", lines=30, scale=1)
+        input_files = gr.File(label="📂 INPUT", file_types=[".txt", ".h"], file_count="multiple", elem_id="input-pane")
+        output_links = gr.HTML(label="📁 出力ファイル", elem_id="output-box")
 
-        with gr.Column(scale=30):
-            gr.Markdown("### 📂 INPUT ファイル")
-            input_files = gr.File(label="", file_types=[".txt", ".h"], file_count="multiple", elem_id="input-pane")
-        with gr.Column(scale=30):
-            gr.Markdown("### 📁 出力ファイル（クリックで表示）")
-            output_files_display = gr.File(file_types=[".html"], file_count="multiple")
-
-    result_text = gr.Textbox(label="ログ", lines=10, interactive=False)
+    log_text = gr.Textbox(label="ログ", lines=10, interactive=False)
 
     start_button.click(
-        fn=save_and_run,
+        fn=run_proofreader_stream,
         inputs=[global_hotwords, local_hotwords, input_files],
-        outputs=[output_files_display, result_text]
+        outputs=[output_links, log_text]
     )
 
-app.launch()
+    stop_button.click(
+        lambda: ("", "⏹ STOPボタンが押されました（未実装）"),
+        inputs=[],
+        outputs=[output_links, log_text]
+    )
+
+    resume_button.click(
+        lambda: ("", "▶ RESUMEボタンが押されました（未実装）"),
+        inputs=[],
+        outputs=[output_links, log_text]
+    )
+
+# FastAPIに統合
+if __name__ == "__main__":
+    from fastapi import FastAPI
+    from fastapi.staticfiles import StaticFiles
+    import uvicorn
+
+    fastapi_app = FastAPI()
+    fastapi_app.mount("/output", StaticFiles(directory="output_html"), name="output")
+    gr.mount_gradio_app(fastapi_app, app, path="/")
+
+    uvicorn.run(fastapi_app, host="0.0.0.0", port=7860)
