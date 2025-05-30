@@ -16,7 +16,14 @@ def load_hotwords(path):
 
 def save_and_run(global_text, local_text, files):
     # hotwords.txt を保存
+    
+    hotwords_text = global_text.strip() + "\n" + local_text.strip()
     all_hotwords = list(set(global_text.strip().splitlines() + local_text.strip().splitlines()))
+    if not hotwords_text.endswith("\n"):
+        hotwords_text += "\n"
+    with open("hotwords.txt", "w", encoding="utf-8") as f:
+        f.write(hotwords_text)
+    
     hotword_path = Path("hotwords.txt")
     hotword_path.write_text("\n".join(all_hotwords), encoding="utf-8")
 
@@ -64,7 +71,7 @@ with gr.Blocks(css="""
     # hotwords.txt をここで読む
     try:
         hotword_text = Path("hotwords.txt").read_text(encoding="utf-8")
-        print(f"hotwords.txt : {hotword_text}")  # ログファイルや別表示にもしたければここを拡張  
+#        print(f"hotwords.txt : {hotword_text}")  # ログファイルや別表示にもしたければここを拡張  
     except Exception:
         hotword_text = f""  # UIに表示させたいなら "" にしておく（ログ出力は別途）
         print(f"hotwords.txt の読み込み失敗: {e}")  # ログファイルや別表示にもしたければここを拡張
