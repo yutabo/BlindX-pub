@@ -17,6 +17,26 @@ def make_html_links(paths):
         links.append(f'<a href="{href}" target="_blank">{name}</a>')
     return "<br>".join(links)
 
+
+HOTWORDS_FILE = "hotwords.txt"
+
+def run_hottool(input_files):
+    if not input_files:
+        return "❌ INPUTファイルをドロップしてください", ""
+
+    input_paths = [f.name for f in input_files]
+    try:
+        subprocess.run(["python3", "hottool.py", *input_paths], check=True)
+    except subprocess.CalledProcessError as e:
+        return f"❌ hottool.py 実行中にエラー: {e}", ""
+
+    if not Path(HOTWORDS_FILE).exists():
+        return "❌ hotwords.txt が生成されていません", ""
+
+    hotwords_text = Path(HOTWORDS_FILE).read_text(encoding="utf-8")
+    return "✅ hottool.py 実行完了", hotwords_text
+
+
 # 実行処理
 def run_proofreader_stream(global_text, local_text, files , max_chars, num_beams):
     log = ""
@@ -145,6 +165,13 @@ with gr.Blocks(css="""
         lambda: ("", "▶ RESUMEボタンが押されました（未実装）"),
         inputs=[],
         outputs=[output_links, log_text]
+    )
+
+    # 🔹 ホットワード抽出ボタンのクリック処理
+    reload_hotwords_button.click(
+        fn=run_hottool,
+        inputs=[input_files],
+        outputs=[global_hotwords, global_hotwords]
     )
 
 # FastAPIに統合
