@@ -17,6 +17,26 @@ def make_html_links(paths):
         links.append(f'<a href="{href}" target="_blank">{name}</a>')
     return "<br>".join(links)
 
+
+HOTWORDS_FILE = "hotwords.txt"
+
+def run_hottool(input_files):
+    if not input_files:
+        return "❌ INPUTファイルをドロップしてください", ""
+
+    input_paths = [f.name for f in input_files]
+    try:
+        subprocess.run(["python3", "hottool.py", *input_paths], check=True)
+    except subprocess.CalledProcessError as e:
+        return f"❌ hottool.py 実行中にエラー: {e}", ""
+
+    if not Path(HOTWORDS_FILE).exists():
+        return "❌ hotwords.txt が生成されていません", ""
+
+    hotwords_text = Path(HOTWORDS_FILE).read_text(encoding="utf-8")
+    return "✅ hottool.py 実行完了", hotwords_text
+
+
 # 実行処理
 def run_proofreader_stream(global_text, local_text, files , max_chars, num_beams):
     log = ""
@@ -59,6 +79,24 @@ def run_proofreader_stream(global_text, local_text, files , max_chars, num_beams
     if not links:
         log += "⚠️ 出力ファイルが作成されませんでした\n"
         yield "", log
+
+
+# STOP処理
+def stop_process(log):
+    global current_process
+    if current_process and current_process.poll() is None:
+        current_process.terminate()
+        log.update("⏹ 処理を中断しました")
+        return
+    log.update("⚠ 停止中のプロセスはありません")
+
+# RESUME処理
+def resume_processing(global_text, local_text, files, max_chars, num_beams, log):
+    global resume_flag
+    save_hotwords(global_text, local_text)
+    resume_flag = True
+    run_processing(files, max_chars, num_beams, log)
+
 
 # Gradio UI
 
@@ -106,8 +144,8 @@ with gr.Blocks(css="""
     # 🆕 新しく追加する行
     with gr.Row():
         reload_hotwords_button = gr.Button("🧠 ホットワード候補")
-        char_limit_slider = gr.Slider(minimum=0, maximum=256, step=8, value=256, label="📏 詰め込み文字数")
-        beams_slider = gr.Slider(minimum=1, maximum=8, step=1, value=2, label="🌟 候補数") 
+        char_limit_slider = gr.Slider(minimum=0, maximum=256, step=8, value=0, label="📏 詰め込み文字数")
+        beams_slider = gr.Slider(minimum=1, maximum=8, step=1, value=3, label="🌟 候補数") 
 
     with gr.Row():
         with gr.Column(scale = 1):  # 約10%
@@ -135,16 +173,20 @@ with gr.Blocks(css="""
         outputs=[output_links, log_text]
     )
 
-    stop_button.click(
-        lambda: ("", "⏹ STOPボタンが押されました（未実装）"),
-        inputs=[],
-        outputs=[output_links, log_text]
-    )
-
+    stop_button.click(fn=stop_process, inputs=[log_text], outputs=[])
+    
     resume_button.click(
-        lambda: ("", "▶ RESUMEボタンが押されました（未実装）"),
-        inputs=[],
-        outputs=[output_links, log_text]
+        fn=resume_processing,
+        inputs=[global_hotwords, local_hotwords, input_files, char_limit_slider, beams_slider, log_text],
+        outputs=[]
+    )
+    
+
+    # 🔹 ホットワード抽出ボタンのクリック処理
+    reload_hotwords_button.click(
+        fn=run_hottool,
+        inputs=[input_files],
+        outputs=[global_hotwords, global_hotwords]
     )
 
 # FastAPIに統合

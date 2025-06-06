@@ -1,0 +1,104 @@
+import sys
+import glob
+from pathlib import Path
+from collections import Counter
+import chardet
+import MeCab
+import re
+
+def robust_read_text(path):
+    """文字コードを自動判別してテキストを読み込む"""
+    raw = Path(path).read_bytes()
+    detected = chardet.detect(raw)
+    encoding = detected.get("encoding", "utf-8")
+
+    try:
+        return raw.decode(encoding)
+    except (UnicodeDecodeError, LookupError):
+        return raw.decode("utf-8", errors="ignore")
+
+
+def is_kanji_char(word):
+    return len(word) == 1 and re.match(r'[一-龯]', word)
+
+def remove_single_kanji_if_contained(words):
+    single_kanji = {w for w in words if is_kanji_char(w)}
+    filtered = []
+    for w in words:
+        if w in single_kanji:
+            continue
+        filtered.append(w)
+    # 単漢字を含む語に一致するかどうか確認
+    result = []
+    for w in filtered:
+        result.append(w)
+    for k in single_kanji:
+        if not any(k in w for w in filtered):
+            result.append(k)
+    return result
+
+
+def extract_hotwords(text):
+    """MeCabで固有名詞・一般名詞だけを抽出"""
+    wakati_tagger = MeCab.Tagger("-Owakati -d /opt/homebrew/lib/mecab/dic/mecab-ipadic-neologd")
+    tagger = MeCab.Tagger()
+    node = tagger.parseToNode(text)
+    words = []
+    while node:
+        surface = node.surface
+        features = node.feature.split(',')
+
+        if features[0] == '名詞' and features[1] in ['固有名詞', '一般']:
+            # フィルタ条件を追加
+            if re.fullmatch(r'[ぁ-ん]{1,2}', surface):  # ひらがな2文字以下
+                node = node.next
+                continue
+            if re.fullmatch(r'[ァ-ヶー]{1}', surface):  # カタカナ1文字のみ
+                node = node.next
+                continue
+            if re.fullmatch(r'[A-Za-z]{1}', surface):     # ローマ字1文字（A-Z, a-z）も除外
+                node = node.next
+                continue
+            if re.fullmatch(r'[Ａ-Ｚａ-ｚ]{1}', surface):    # 全角英字1文字（Ａ～Ｚ，ａ～ｚ）も除外
+                node = node.next
+                continue
+                
+            words.append(surface)
+        node = node.next
+    words = sorted(set(words))  # 重複除去＋整列
+    words = remove_single_kanji_if_contained(words)
+    return words
+    
+def generate_hotwords_from_files(filepaths, min_count=3):
+    """複数ファイルからhotwordsを抽出"""
+    all_words = []
+    for filepath in filepaths:
+        try:
+            text = robust_read_text(filepath)
+            words = extract_hotwords(text)
+            all_words.extend(words)
+        except Exception as e:
+            print(f"⚠️ 読み込み失敗: {filepath} → {e}")
+            continue
+
+    counter = Counter(all_words)
+    hotwords = [word for word, count in counter.items() if count >= min_count]
+    return hotwords
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("使い方: python hottool.py 入力ファイル1.txt [入力ファイル2.txt ...]")
+        sys.exit(1)
+
+    file_paths = []
+    for arg in sys.argv[1:]:
+        file_paths.extend(glob.glob(arg))
+
+    if not file_paths:
+        print("❌ 有効なファイルが見つかりません")
+        sys.exit(1)
+
+    hotwords = generate_hotwords_from_files(file_paths, min_count=3)
+    for word in sorted(hotwords):
+        print(word)
+
