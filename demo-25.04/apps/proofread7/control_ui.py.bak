@@ -1,0 +1,126 @@
+import gradio as gr
+import subprocess
+import os
+import signal
+from pathlib import Path
+import threading
+
+# プロセス情報保持用
+current_process = None
+resume_flag = False
+input_file_cache = []
+
+OUTPUT_DIR = "output_html"
+HOTWORDS_FILE = "hotwords.txt"
+MAIN_SCRIPT = "main_cui.py"
+
+# ホットワードを hotwords.txt に保存
+def save_hotwords(global_text, local_text):
+    all_lines = global_text.strip().splitlines() + local_text.strip().splitlines()
+    with open(HOTWORDS_FILE, "w", encoding="utf-8") as f:
+        f.write("\n".join(line.strip() for line in all_lines if line.strip()) + "\n")
+
+# メイン処理実行（再帰ではなくスレッド）
+def run_processing(files, max_chars, num_beams, log_box):
+    global current_process, resume_flag, input_file_cache
+
+    Path(OUTPUT_DIR).mkdir(exist_ok=True)
+
+    def process():
+        nonlocal files
+        log_messages = []
+
+        for file in files:
+            input_path = Path(file.name)
+            output_path = Path(OUTPUT_DIR) / (input_path.name + ".html")
+
+            if resume_flag and output_path.exists():
+                log_messages.append(f"⏩ Skip: {output_path.name}")
+                continue
+
+            cmd = [
+                "python3", MAIN_SCRIPT,
+                "--input", str(input_path),
+                "--hotfile", HOTWORDS_FILE,
+                "--output", str(output_path),
+                "--max_chars", str(max_chars),
+                "--num_beams", str(num_beams)
+            ]
+
+            log_messages.append(f"[{input_path.name}] 実行中: {' '.join(cmd)}")
+
+            try:
+                current_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                stdout, stderr = current_process.communicate()
+
+                if current_process.returncode == 0:
+                    log_messages.append(f"✅ 完了: {output_path.name}")
+                else:
+                    log_messages.append(f"❌ エラー: {stderr.decode(errors='ignore')}")
+
+            except Exception as e:
+                log_messages.append(f"❌ 実行失敗: {str(e)}")
+
+            log_box.update("\n".join(log_messages))
+
+        log_messages.append("🎉 全処理完了")
+        log_box.update("\n".join(log_messages))
+        current_process = None
+
+    thread = threading.Thread(target=process)
+    thread.start()
+
+# STOP処理
+def stop_process(log_box):
+    global current_process
+    if current_process and current_process.poll() is None:
+        current_process.terminate()
+        log_box.update("⏹ 処理を中断しました")
+        return
+    log_box.update("⚠ 停止中のプロセスはありません")
+
+# RESUME処理
+def resume_processing(global_text, local_text, files, max_chars, num_beams, log_box):
+    global resume_flag
+    save_hotwords(global_text, local_text)
+    resume_flag = True
+    run_processing(files, max_chars, num_beams, log_box)
+
+# Gradio UI
+with gr.Blocks() as app:
+    gr.Markdown("## 📝 校正ツール UI（STOP / RESUME 対応）")
+
+    with gr.Row():
+        global_hotwords = gr.Textbox(label="Global Hotwords", lines=20)
+        local_hotwords = gr.Textbox(label="Local Hotwords", lines=20)
+        input_files = gr.File(label="INPUTファイル", file_types=[".txt", ".h"], file_count="multiple")
+        output_links = gr.HTML(label="出力リンク")
+
+    with gr.Row():
+        max_chars = gr.Slider(0, 256, step=8, label="詰め込み文字数", value=128)
+        num_beams = gr.Slider(1, 8, step=1, label="候補数（beams）", value=4)
+
+    with gr.Row():
+        start_btn = gr.Button("▶ START")
+        stop_btn = gr.Button("⏹ STOP")
+        resume_btn = gr.Button("⏵ RESUME")
+
+    log_box = gr.Textbox(label="ログ", lines=15, interactive=False)
+
+    start_btn.click(
+        fn=lambda global_text, local_text, files, chars, beams, log: (
+            save_hotwords(global_text, local_text),
+            run_processing(files, chars, beams, log)
+        ),
+        inputs=[global_hotwords, local_hotwords, input_files, max_chars, num_beams, log_box],
+        outputs=[]
+    )
+
+    stop_btn.click(fn=stop_process, inputs=[log_box], outputs=[])
+    resume_btn.click(
+        fn=resume_processing,
+        inputs=[global_hotwords, local_hotwords, input_files, max_chars, num_beams, log_box],
+        outputs=[]
+    )
+
+app.launch()

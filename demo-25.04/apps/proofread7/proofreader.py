@@ -53,7 +53,31 @@ def is_similar(text1, text2, threshold=0.9):
     similarity = SequenceMatcher(None, norm1, norm2).ratio()
     return similarity >= threshold, similarity
 
+import unicodedata
+import re
+
 def normalize_text(text):
+    """
+    カタカナを保持しつつ、他の表記揺れ（全角・半角・空白など）を統一する正規化処理。
+    """
+    if not text:
+        return ""
+
+    # Unicode正規化（NFKC: 全角→半角、合成文字の統合）
+    text = unicodedata.normalize("NFKC", text)
+
+    # 全角スペース→半角スペース
+    text = text.replace("　", " ")
+
+    # 連続するスペースやタブを1つに
+    text = re.sub(r"[ \t]+", " ", text)
+
+    # 前後の空白を削除
+    text = text.strip()
+
+    return text
+
+def normalize_text_old(text):
     text = remove_scores(text)
     text = jaconv.z2h(text, kana=False, digit=True, ascii=True)    
     text = jaconv.kata2hira(text)  # 任意
@@ -124,44 +148,6 @@ def check_chunk_match(pr):
         print(f"[ERROR] MeCab chunk_match failed: {e}")
         return False
 
-def check_chunk_match_old(pr):
-    try:
-#        wakati_tagger = MeCab.Tagger("-Owakati")
-        wakati_tagger = MeCab.Tagger("-Owakati -d /opt/homebrew/lib/mecab/dic/mecab-ipadic-neologd")
-        norm_input = normalize_text(pr.input_text)
-        input_chunks = wakati_tagger.parse(norm_input)
-
-        if input_chunks is None:
-            raise ValueError("MeCab parse returned None for input")
-
-        input_chunks = input_chunks.strip().split()
-        print(f"[DEBUG] input chunks: {input_chunks}")
-
-        for output_text, _ in pr.output_texts:
-            print(f"[DEBUG] output text = {output_text}")
-            norm_output = normalize_text(output_text)
-            out_chunks = wakati_tagger.parse(norm_output)
-            if not out_chunks:
-                continue
-
-            out_chunks = out_chunks.strip().split()
-            joined_output = ''.join(out_chunks)
-            print(f"[DEBUG] joined output = {joined_output}")
-
-            # すべての input の文節が joined_output に含まれるか
-            unmatched_chunks = [chunk for chunk in input_chunks if chunk not in joined_output]
-            if not unmatched_chunks:
-                print(f"[DEBUG] ✅ chunk_match 成立")
-                return True
-            else:
-                print(f"[DEBUG] ❌ unmatched chunks: {unmatched_chunks}")
-
-    except Exception as e:
-        print(f"[ERROR] MeCab chunk_match failed: {e}")
-
-    print(f"[DEBUG] ❌ chunk_match 不成立")
-    return False
-
 
 class Proofreader():
 
@@ -225,8 +211,6 @@ class Proofreader():
             if norm_input == norm_output:
 #                print("[DEBUG:get_score] 完全一致 → score=100")
                 return 100, True
-
-
 
             # 類似度スコアの計算
             try:
@@ -311,6 +295,9 @@ class Proofreader():
         self.input_text = input_text
         self.output_texts = []
 
+        if(input_text == ''):   #何もないものを放り込むとエラーになるため
+            return []
+        
         try:
             # 入力の前処理（コロンのエスケープなど）
             escaped_input_text = input_text.replace(':', '<COLON>')
@@ -319,8 +306,9 @@ class Proofreader():
 
             # モデル呼び出し
             dict_cmd = f'T{dict_index}:{num_beams}+:'
+#            print(f'[DEBUG] hiragana_text : {self.hiragana_text}')
             blindx_texts = await self.inference.send_recv_async(dict_cmd, self.hiragana_text)
-
+#            print(f'[DEBUG] blindx_text : {blindx_texts}')
             # パース
             parsed_outputs = parse_blindx_texts(blindx_texts)
             if not parsed_outputs:

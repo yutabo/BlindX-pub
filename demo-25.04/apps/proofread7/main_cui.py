@@ -68,14 +68,14 @@ if __name__ == "__main__":
     #    parser.add_argument('--hotwords', nargs='+', help='hot words')
     parser.add_argument('--encoding', default='auto', help='text encoding (e.g., utf-8, utf-16-le, or auto)')
     parser.add_argument('--hotfile', help='hot file')
-    parser.add_argument('--max_chars', help='max chars　何文字詰め込むか')
-    parser.add_argument('--num_beams', default=2, help='max beams : 何個候補を出すか')
+    parser.add_argument('--max_chars', default=0, help='max chars　何文字詰め込むか')
+    parser.add_argument('--num_beams', default=3, help='max beams : 何個候補を出すか')
     args = parser.parse_args()
 
     def chunk_lines_by_char_limit(lines, max_chars=None):
-        if max_chars is None:
-            max_chars = 256
-
+#        if max_chars is None:
+#            max_chars = 0
+            
         chunks = []
         current_chunk = []
         current_length = 0
@@ -106,31 +106,6 @@ if __name__ == "__main__":
         if current_chunk:
             chunks.append((current_chunk.copy(), current_indices.copy()))
 
-        return chunks
-
-    def chunk_lines_by_char_limit_old(lines, max_chars=None):
-        if max_chars is None:
-            max_chars = 256
-        chunks = []
-        current_chunk = []
-        current_length = 0
-        current_indices = []
-
-        for idx, line in enumerate(lines):
-            line_length = len(line)
-            if current_length + line_length <= max_chars:
-                current_chunk.append(line)
-                current_indices.append(idx)
-                current_length += line_length
-            else:
-                if current_chunk:
-                    chunks.append((current_chunk.copy(), current_indices.copy()))
-                    current_chunk = [line]
-                    current_indices = [idx]
-                    current_length = line_length
-                    
-        if current_chunk:
-            chunks.append((current_chunk.copy(), current_indices.copy()))
         return chunks
 
     import chardet
@@ -220,6 +195,7 @@ if __name__ == "__main__":
         chunks = chunk_lines_by_char_limit(lines, max_chars=max_chars)
         
 
+        print(f'Max Chars : {max_chars}       Num Beams : {num_of_beams}')
         #        print(f"[DEBUG] チャンク数 = {len(chunks)}")
         print(f"hotwords : {' '.join(hotwords)}")
         print('\n--------')
@@ -318,7 +294,7 @@ if __name__ == "__main__":
 
             #ここから判定
             for i, pr in enumerate(proofreaders):
-#                print(f"\nline : {i} {pr.input_text}")
+#                print(f"[DUBUG] \nline : {i} {pr.input_text}")
                 output_scores = {}  # 初期化はここで一度だけ
                 pass_flag = False
                 seen_texts = set() 
@@ -326,6 +302,7 @@ if __name__ == "__main__":
                     try:
                         zenkaku_output_text = pr.concat_output_text(output_text)
                         score, chunk_match = pr.get_score(zenkaku_output_text)
+#                        print(f"[DUBUG] socre : {score}") 
                         if(score == 100):
                             pass_flag = True
                         match = re.match(r'T(\d+)', dictionary_name)
@@ -356,7 +333,7 @@ if __name__ == "__main__":
                 else:
 #                    print(f'{pr.highlight_diff(pr.input_text, zenkaku_output_text)}')
                     print(f'{BOLD}{CYAN}{pr.highlight_unmatched_chunks(pr.input_text, unmatched_chunks)}{RESET}')
-#                    print(f' FAIL: has_high_score {has_high_score}  chunk_match {chunk_match}')
+#                    print(f' FAIL: has_high_score {has_high_score}  chunk_matcuh {chunk_match}')
                     fail_count += 1
                     for (zenkaku_output_text, model_name), score in sorted_scores:
                         if zenkaku_output_text in seen_texts:
@@ -374,7 +351,7 @@ if __name__ == "__main__":
         if progress_bar:
             progress_bar.set_postfix({'怪しい行': fail_count})
 
-        print(f'\n       FAIL COUNT :  \033[31m{fail_count:3.0f}\033[0m    PASS COUNT : {pass_count:3.0f}\n')
+        print(f'\n       FAIL COUNT :  \033[31m{fail_count:3.0f}\033[0m    PASS COUNT : {pass_count:3.0f}      PASS RATE : {pass_count/(pass_count + fail_count) * 100:3.2f} %\n')
 
         if buffer:        
             sys.stdout = sys.__stdout__  # 元に戻す

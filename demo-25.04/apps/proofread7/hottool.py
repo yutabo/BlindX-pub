@@ -57,13 +57,23 @@ def extract_named_entities(text):
 def is_valid_hotword(word, all_words):
     if not word:
         return False
-    if re.fullmatch(r'[ぁ-ん]{1,2}', word): return False
+    if re.fullmatch(r'[ぁ-んー]+', word):   return False
+#    if re.fullmatch(r'[ぁ-ん]{1,2}', word): return False
     if re.fullmatch(r'[ァ-ヶー]{1}', word): return False
     if re.fullmatch(r'[a-zA-ZＡ-Ｚａ-ｚ]{1,3}', word): return False
+    # 一文字漢字で他に含まれている
     if re.fullmatch(r'[一-龯]', word):
         for other in all_words:
             if other != word and word in other:
                 return False
+    # 感嘆詞や句読点などの記号（！、…。など）
+    if re.search(r'[。、．・…！!？?]', word):
+        return False
+    # よくある代名詞的な語
+    NG_WORDS = {'その子', 'その人', 'この子', 'あの人', 'な！', 'なぁ', 'ふーん', 'へえ', 'うん', 'はい', 'いいえ', 'わー'}
+    if word in NG_WORDS:
+        return False
+
     return True
 
 def main():
@@ -87,6 +97,10 @@ def main():
             f.write(word + "\n")
 
     print(f"\n✅ {len(filtered)} hotwords extracted to hotwords.txt")
+
+
+
+
     if filtered:
         print("📄 抽出結果:", filtered)
 
