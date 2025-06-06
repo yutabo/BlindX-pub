@@ -59,6 +59,25 @@ def normalize_text(text):
     text = jaconv.kata2hira(text)  # 任意
     return re.sub(r'[！？!?\。、．「」（）『』［］【】…‥・ー"\'\s]', '', text)
 
+import MeCab
+import platform
+import os
+
+def get_mecab_dic_path():
+    if platform.system() == 'Windows':
+        return "C:/msys64/mingw64/lib/mecab/dic/mecab-ipadic-neologd"
+    elif platform.system() == 'Darwin':  # macOS
+        return '/opt/homebrew/lib/mecab/dic/mecab-ipadic-neologd'
+    else:
+        raise RuntimeError("Unsupported OS")
+
+
+# 🔽 グローバル変数として定義
+DIC_PATH = get_mecab_dic_path()
+# （任意）存在チェックも入れると安心
+if not os.path.exists(os.path.join(DIC_PATH, "dicrc")):
+    raise FileNotFoundError(f"MeCab辞書が見つかりません: {DIC_PATH}")
+
 import re
 
 def remove_scores(text):
@@ -86,9 +105,15 @@ def parse_blindx_texts(blindx_texts):
 
 
 def check_chunk_match(pr):
+#    dic_path = get_mecab_dic_path()
+#    if not os.path.exists(os.path.join(dic_path, "dicrc")):
+#        raise FileNotFoundError(f"MeCab辞書が見つかりません: {dic_path}")
+
     try:
+        
 #        wakati_tagger = MeCab.Tagger("-Owakati")
-        wakati_tagger = MeCab.Tagger("-Owakati -d /opt/homebrew/lib/mecab/dic/mecab-ipadic-neologd")
+        wakati_tagger = MeCab.Tagger(f"-Owakati -d {DIC_PATH}") 
+#        wakati_tagger = MeCab.Tagger("-Owakati -d /opt/homebrew/lib/mecab/dic/mecab-ipadic-neologd")
         norm_input = normalize_text(pr.input_text)
         input_chunks = wakati_tagger.parse(norm_input)
 
@@ -124,53 +149,21 @@ def check_chunk_match(pr):
         print(f"[ERROR] MeCab chunk_match failed: {e}")
         return False
 
-def check_chunk_match_old(pr):
-    try:
-#        wakati_tagger = MeCab.Tagger("-Owakati")
-        wakati_tagger = MeCab.Tagger("-Owakati -d /opt/homebrew/lib/mecab/dic/mecab-ipadic-neologd")
-        norm_input = normalize_text(pr.input_text)
-        input_chunks = wakati_tagger.parse(norm_input)
-
-        if input_chunks is None:
-            raise ValueError("MeCab parse returned None for input")
-
-        input_chunks = input_chunks.strip().split()
-        print(f"[DEBUG] input chunks: {input_chunks}")
-
-        for output_text, _ in pr.output_texts:
-            print(f"[DEBUG] output text = {output_text}")
-            norm_output = normalize_text(output_text)
-            out_chunks = wakati_tagger.parse(norm_output)
-            if not out_chunks:
-                continue
-
-            out_chunks = out_chunks.strip().split()
-            joined_output = ''.join(out_chunks)
-            print(f"[DEBUG] joined output = {joined_output}")
-
-            # すべての input の文節が joined_output に含まれるか
-            unmatched_chunks = [chunk for chunk in input_chunks if chunk not in joined_output]
-            if not unmatched_chunks:
-                print(f"[DEBUG] ✅ chunk_match 成立")
-                return True
-            else:
-                print(f"[DEBUG] ❌ unmatched chunks: {unmatched_chunks}")
-
-    except Exception as e:
-        print(f"[ERROR] MeCab chunk_match failed: {e}")
-
-    print(f"[DEBUG] ❌ chunk_match 不成立")
-    return False
-
 
 class Proofreader():
 
     def __init__(self):
         self.kanhira = Kanhira()
         self.inference = RemoteInference()
-        self.output_texts = []        
+        self.output_texts = []
+        
+        dic_path = get_mecab_dic_path()
+        if not os.path.exists(os.path.join(dic_path, "dicrc")):
+            raise FileNotFoundError(f"MeCab辞書が見つかりません: {dic_path}")
+
 #        self.wakati_tagger = MeCab.Tagger("-Owakati")
-        wakati_tagger = MeCab.Tagger("-Owakati -d /opt/homebrew/lib/mecab/dic/mecab-ipadic-neologd")
+        wakati_tagger = MeCab.Tagger(f"-Owakati -d {DIC_PATH}") 
+#        wakati_tagger = MeCab.Tagger("-Owakati -d /opt/homebrew/lib/mecab/dic/mecab-ipadic-neologd")
 #        print(f'[DEBUG] Neologd Start ')
         self.passed_index = 0
 
@@ -239,7 +232,8 @@ class Proofreader():
             # 文節一致チェック（MeCab）
             try:
                 #wakati_tagger = MeCab.Tagger("-Owakati")
-                wakati_tagger = MeCab.Tagger("-Owakati -d /opt/homebrew/lib/mecab/dic/mecab-ipadic-neologd")
+                wakati_tagger = MeCab.Tagger(f"-Owakati -d {DIC_PATH}") 
+#                wakati_tagger = MeCab.Tagger("-Owakati -d /opt/homebrew/lib/mecab/dic/mecab-ipadic-neologd")
                 orig_chunks = wakati_tagger.parse(norm_input)
                 out_chunks = wakati_tagger.parse(norm_output)
 
@@ -310,6 +304,9 @@ class Proofreader():
     async def test_async(self, input_text, dict_index, num_beams=2):
         self.input_text = input_text
         self.output_texts = []
+
+        if(input_text == ''):   #何もないものを放り込むとエラーになるため
+            return []
 
         try:
             # 入力の前処理（コロンのエスケープなど）
