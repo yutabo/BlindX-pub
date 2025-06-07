@@ -2,9 +2,13 @@ import gradio as gr
 import subprocess
 from datetime import datetime
 from pathlib import Path
+import os
+import sys
+
+HOTWORDS_FILE = "hotwords.txt"
 
 # Hotwords保存
-def save_hotwords(global_text, local_text, filepath="hotwords.txt"):
+def save_hotwords(global_text, local_text, filepath=HOTWORDS_FILE):
     combined = global_text.strip() + "\n" + local_text.strip() + "\n"
     Path(filepath).write_text(combined, encoding="utf-8")
 
@@ -18,15 +22,17 @@ def make_html_links(paths):
     return "<br>".join(links)
 
 
-HOTWORDS_FILE = "hotwords.txt"
-
 def run_hottool(input_files):
     if not input_files:
         return "❌ INPUTファイルをドロップしてください", ""
 
+    env = os.environ.copy()
+    env["PATH"] = sys.exec_prefix + "/Scripts;" + env["PATH"]
+    env["PYTHONPATH"] = os.pathsep.join(sys.path)
+
     input_paths = [f.name for f in input_files]
     try:
-        subprocess.run(["python", "hottool.py", *input_paths], check=True)
+        subprocess.run(["python", "hottool.py", *input_paths], check=True, env=env)
     except subprocess.CalledProcessError as e:
         return f"❌ hottool.py 実行中にエラー: {e}", ""
 
@@ -66,10 +72,6 @@ def run_proofreader_stream(global_text, local_text, files , max_chars, num_beams
 
         log += f"[{datetime.now().strftime('%H:%M:%S')}] 実行: {' '.join(cmd)}\n"
         yield make_html_links(links), log
-
-        import subprocess
-        import os
-        import sys
 
         env = os.environ.copy()
         env["PATH"] = sys.exec_prefix + "/Scripts;" + env["PATH"]

@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title></title>
+<style type="text/css">
+.ansi2html-content { display: inline; white-space: pre-wrap; word-wrap: break-word; }
+.body_foreground { color: #AAAAAA; }
+.body_background { background-color: #000000; }
+.inv_foreground { color: #000000; }
+.inv_background { background-color: #AAAAAA; }
+.ansi1 { font-weight: bold; }
+.ansi31 { color: #aa0000; }
+.ansi36 { color: #00aaaa; }
+.ansi38-143 { color: #afaf5f; }
+</style>
+</head>
+<body class="body_foreground body_background" style="font-size: normal;" >
+<pre class="ansi2html-content">
+hotwords :   　 、 , … ^◆.*$ 【.*?】 ［.*?］ ^◆.*$ //.*$ ^;.*$
+
+--------
+◆場面切替^草原
+吹き抜けるような草原の真ん中で、二人の視線がぶつかり合う
+柔らかな水色と、焦げ茶色の睫毛が、強く揺れた
+［菊池リョウ］「探してた、お前のこと」
+［周防景人］「俺もです」
+［周防景人］「１９９９年の、あのときから、ずっと」
+◆場面切替^黒背景
+細めた笑みの輪郭に　お互いが心の中で泣いた
+◆場面切替^イベントCG（cg_ek_007）
+風が　強く吹いている
+青い草が　透明な何かに撫でられ寝そべりあい
+太陽は　風に押されて西へと移動し
+橋の下へ　深い影を落としこむ
+［菊池リョウ］「オレは、……オレはさ」
+気持ちを噛み潰すように　何度も言い直して
+<span class="ansi1"></span><span class="ansi1 ansi36">［菊池リョウ］「オレは……、ちゃんと歳を取りたいんだ」</span>
+<span class="ansi31">［菊池リョウ］「</span><span class="ansi38-143">俺</span><span class="ansi31">は……、ちゃんと歳を取りたいんだ」</span> :  87 [2ch256_small_32_all_-4] 
+<span class="ansi31">［菊池リョウ］「</span><span class="ansi38-143">俺</span><span class="ansi31">は……、ちゃんと</span><span class="ansi38-143">年</span><span class="ansi31">を取りたいんだ」</span> :  83 [wiki256_small_64_all_-5] 
+<span class="ansi31">［菊池リョウ］「</span><span class="ansi38-143">俺</span><span class="ansi31">は……、ちゃんと歳を</span><span class="ansi38-143">と</span><span class="ansi31">りたいんだ」</span> :  83 [2ch256_small_32_all_-4] 
+<span class="ansi31">［菊池リョウ］「</span><span class="ansi38-143">俺</span><span class="ansi31">は……、ちゃんと</span><span class="ansi38-143">年</span><span class="ansi31">を</span><span class="ansi38-143">と</span><span class="ansi31">りたいんだ」</span> :  79 [wiki256_small_64_all_-5] 
+<span class="ansi1"></span><span class="ansi1 ansi36">［菊池リョウ］「歳を取って、仕事に就いて、</span><span class="ansi1 ansi38-143">みどり</span><span class="ansi1 ansi36">と安全に暮らしたい」</span>
+<span class="ansi31">［菊池リョウ］「</span><span class="ansi38-143">年</span><span class="ansi31">を取って、仕事に就いて、</span><span class="ansi38-143">緑</span><span class="ansi31">と安全に暮らしたい」</span> :  85 [cc256geo_16_-5] 
+<span class="ansi31">［菊池リョウ］「歳を</span><span class="ansi38-143">と</span><span class="ansi31">って、仕事に就いて、</span><span class="ansi38-143">緑</span><span class="ansi31">と安全に暮らしたい」</span> :  85 [cc256geo_16_-5] 
+<span class="ansi31">［菊池リョウ］「</span><span class="ansi38-143">年</span><span class="ansi31">を取って、仕事に</span><span class="ansi38-143">つ</span><span class="ansi31">いて、</span><span class="ansi38-143">緑</span><span class="ansi31">と安全に暮らしたい」</span> :  82 [wiki256_small_64_all_-5] 
+<span class="ansi31">［菊池リョウ］「歳を</span><span class="ansi38-143">と</span><span class="ansi31">って、仕事に</span><span class="ansi38-143">つ</span><span class="ansi31">いて、</span><span class="ansi38-143">緑</span><span class="ansi31">と安全に暮らしたい」</span> :  82 [2ch256_small_32_all_-4] 
+<span class="ansi31">［菊池リョウ］「</span><span class="ansi38-143">年</span><span class="ansi31">を</span><span class="ansi38-143">と</span><span class="ansi31">って、仕事に</span><span class="ansi38-143">つ</span><span class="ansi31">いて、</span><span class="ansi38-143">緑</span><span class="ansi31">と安全に暮らしたい」</span> :  79 [wiki256_small_64_all_-5] 
+［菊池リョウ］「お前にも、同じように歳を取ってほしいと思う」
+つまった声、ひそめた眉で　苦しそうに笑う
+［菊池リョウ］「……ひどいだろうか」
+［周防景人］「わかりません、今の俺に可能なのか」
+［周防景人］「大人になれないまま、終わってしまうと、定められた命だから」
+［周防景人］「でも、あなたの夢を叶えたいなあ」
+<span class="ansi1"></span><span class="ansi1 ansi36">［周防景人］「俺が、年を</span><span class="ansi1 ansi38-143">とっても</span><span class="ansi1 ansi36">俺の夢を諦めないところを、見てほしいなあ……」</span>
+<span class="ansi31">［周防景人］「俺が、年を</span><span class="ansi38-143">取</span><span class="ansi31">っても俺の夢を諦めないところを、見てほしいなあ……」</span> :  92 [wiki256_small_64_all_-5] 
+<span class="ansi31">［周防景人］「俺が、年を</span><span class="ansi38-143">取</span><span class="ansi31">っても俺の夢を諦めないところを、見て</span><span class="ansi38-143">欲</span><span class="ansi31">しいなあ……」</span> :  90 [2ch256_small_32_all_-4] 
+<span class="ansi31">［周防景人］「俺が、年を</span><span class="ansi38-143">取</span><span class="ansi31">っても俺の夢を諦めない</span><span class="ansi38-143">所</span><span class="ansi31">を、見てほしいなあ……」</span> :  87 [wiki256_small_64_all_-5] 
+<span class="ansi31">［周防景人］「俺が、年を</span><span class="ansi38-143">取</span><span class="ansi31">っても俺の夢を諦めない</span><span class="ansi38-143">所</span><span class="ansi31">を、見て</span><span class="ansi38-143">欲</span><span class="ansi31">しいなあ……」</span> :  84 [cc256geo_16_-5] 
+◆場面切替^黒背景
+十七歳と十五歳、――１９９９年と２０１２年
+1999と2012の最大公約数は　どこにあるのだろう
+重なる点をつぶさに探して、僕たちは大いなる奇跡を求めている
+［僕＠夏目］「……僕ら、心の底ではわかっているはずだ」
+<span class="ansi1"></span><span class="ansi1 ansi36">［僕＠夏目］「菊池リョウの夢は、周防</span><span class="ansi1 ansi38-143">景人</span><span class="ansi1 ansi36">の願いの結末を」</span>
+<span class="ansi31">［僕＠夏目］「菊池</span><span class="ansi38-143">涼</span><span class="ansi31">の夢は、周防</span><span class="ansi38-143">系</span><span class="ansi31">人の願いの結末を」</span> :  78 [wiki256_small_64_all_-5] 
+<span class="ansi31">［僕＠夏目］「菊池</span><span class="ansi38-143">涼</span><span class="ansi31">の夢は、周防</span><span class="ansi38-143">渓</span><span class="ansi31">人の願いの結末を」</span> :  78 [wiki256_small_64_all_-5] 
+<span class="ansi31">［僕＠夏目］「菊池</span><span class="ansi38-143">良</span><span class="ansi31">の夢は、周防</span><span class="ansi38-143">刑</span><span class="ansi31">人の願いの結末を」</span> :  78 [aozoracc256geo_32_-5] 
+<span class="ansi31">［僕＠夏目］「菊池</span><span class="ansi38-143">遼</span><span class="ansi31">の夢は、周防</span><span class="ansi38-143">渓</span><span class="ansi31">人の願いの結末を」</span> :  78 [cc256geo_16_-5] 
+<span class="ansi31">［僕＠夏目］「菊池</span><span class="ansi38-143">良</span><span class="ansi31">の夢は、</span><span class="ansi38-143">ス王刑</span><span class="ansi31">人の願の結末を」</span> :  68 [aozoracc256geo_32_-5] 
+<span class="ansi31">［僕＠夏目］「菊池</span><span class="ansi38-143">涼</span><span class="ansi31">の夢は、</span><span class="ansi38-143">吸おうけいじん</span><span class="ansi31">の</span><span class="ansi38-143">ねが</span><span class="ansi31">いの</span><span class="ansi38-143">けつまつ</span><span class="ansi31">を」</span> :  50 [2ch256_small_32_all_-4] 
+<span class="ansi31">［僕＠夏目］「菊池</span><span class="ansi38-143">涼</span><span class="ansi31">の夢は、</span><span class="ansi38-143">すおうけいじん</span><span class="ansi31">の</span><span class="ansi38-143">ねが</span><span class="ansi31">いの</span><span class="ansi38-143">けつまつ</span><span class="ansi31">を」</span> :  50 [2ch256_small_32_all_-4] 
+＜選択肢＞願いは届く
+＜選択肢＞夢は叶わない
+◆SENTAKU_A
+◆場面切替^草原
+［僕＠夏目］「悲しいけれど、僕らの夢は、きっと叶わない」
+［間宮夢久］「待てよ夏目、俺が行けばいいんだ　１９９９年の夢ならば──」
+［僕＠夏目］「いいや、自然のままであるべきだ」
+［僕＠夏目］「僕らがもう、彼らに関与できるのは、ここまでなんだよ」
+［間宮夢久］「……、……そんな　……そんな」
+■ksend_suo02へ
+◆SENTAKU_B
+◆場面切替^草原
+［僕＠夏目］「……願いは届く、僕らは、そう信じている」
+［僕＠夏目］「願いを実現するための　公約数たる1こそが――」
+［僕＠夏目］「僕と、間宮　お前だということ　お前だってわかっているんだろう」
+［間宮夢久］「…………」
+<span class="ansi1"></span><span class="ansi1 ansi36">［間宮夢久］「今更</span><span class="ansi1 ansi38-143">何だ</span><span class="ansi1 ansi36">？　散々マミヤを、俺達を否定し続けて」</span>
+<span class="ansi31">［間宮夢久］「今更</span><span class="ansi38-143">なん</span><span class="ansi31">だ？　散々</span><span class="ansi38-143">間宮</span><span class="ansi31">を、俺</span><span class="ansi38-143">たち</span><span class="ansi31">を否定し続けて」</span> :  69 [2ch256_small_32_all_-4] 
+<span class="ansi31">［間宮夢久］「今更</span><span class="ansi38-143">なん</span><span class="ansi31">だ？　</span><span class="ansi38-143">さんざん間宮</span><span class="ansi31">を、俺達を否定し続けて」</span> :  65 [cc256geo_16_-5] 
+<span class="ansi31">［間宮夢久］「今更</span><span class="ansi38-143">なん</span><span class="ansi31">だ？　</span><span class="ansi38-143">さんざん間宮</span><span class="ansi31">を、俺</span><span class="ansi38-143">たち</span><span class="ansi31">を否定し続けて」</span> :  60 [wiki256_small_64_all_-5] 
+<span class="ansi31">［間宮夢久］「今</span><span class="ansi38-143">さらなん</span><span class="ansi31">だ？　</span><span class="ansi38-143">さんざん間宮</span><span class="ansi31">を、俺</span><span class="ansi38-143">たち</span><span class="ansi31">を否定し続けて」</span> :  56 [aozoracc256geo_32_-5] 
+<span class="ansi31">［間宮夢久］「</span><span class="ansi38-143">いまさらなん</span><span class="ansi31">だ？　</span><span class="ansi38-143">さんざん間宮</span><span class="ansi31">を、俺</span><span class="ansi38-143">たち</span><span class="ansi31">を否定し続けて」</span> :  52 [wiki256_small_64_all_-5] 
+［僕＠夏目］「……そうだね」
+<span class="ansi1"></span><span class="ansi1 ansi36">［僕＠夏目］「忘れてくれ　再会できた喜びにあてられて、ヘンなことを言いたくなったんだ」</span>
+<span class="ansi31">［僕＠夏目］「忘れてくれ　再会できた喜びにあてられて、</span><span class="ansi38-143">変</span><span class="ansi31">なことを言いたくなったんだ」</span> :  87 [wiki256_small_64_all_-5] 
+<span class="ansi31">［僕＠夏目］「忘れてくれ　再会できた喜びに</span><span class="ansi38-143">当</span><span class="ansi31">てられて、</span><span class="ansi38-143">変</span><span class="ansi31">なことを言いたくなったんだ」</span> :  85 [wiki256_small_64_all_-5] 
+<span class="ansi31">［僕＠夏目］「忘れてくれ　再</span><span class="ansi38-143">開</span><span class="ansi31">できた喜びにあてられて、</span><span class="ansi38-143">変</span><span class="ansi31">なことを言いたくなったんだ」</span> :  85 [aozoracc256geo_32_-5] 
+<span class="ansi31">［僕＠夏目］「忘れてくれ　再</span><span class="ansi38-143">開</span><span class="ansi31">できた喜びに</span><span class="ansi38-143">当</span><span class="ansi31">てられて、</span><span class="ansi38-143">変</span><span class="ansi31">なことを言いたくなったんだ」</span> :  82 [2ch256_small_32_all_-4] 
+<span class="ansi31">［僕＠夏目］「忘れてくれ　再</span><span class="ansi38-143">開</span><span class="ansi31">できた喜びに</span><span class="ansi38-143">当</span><span class="ansi31">てられて、</span><span class="ansi38-143">変</span><span class="ansi31">な</span><span class="ansi38-143">事</span><span class="ansi31">を言いたくなったんだ」</span> :  79 [2ch256_small_32_all_-4] 
+［間宮夢久］「ふん」
+［間宮夢久］「……、……わかっているさ」
+◆場面切替^黒背景
+［間宮夢久］「願いのために、俺はここにいるのだから」
+
+       FAIL COUNT :  <span class="ansi31">  6</span>    PASS COUNT : <span class="ansi36"> 47</span>        REDUCTION : <span class="ansi38-143">88.7</span> %       
+
+
+</pre>
+</body>
+
+</html>

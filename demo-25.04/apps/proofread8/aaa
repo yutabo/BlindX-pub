@@ -1,0 +1,43 @@
+True)
+
+    for file in files:
+            filename = Path(file.name).name
+	            raw = file.read()
+		            text = robust_decode(raw)
+			            result = pf.process(text)
+
+        out_path = output_dir / filename
+	        out_path.write_text(result, encoding="utf-8")
+		        output_files.append(str(out_path))
+
+    return make_html_links(output_files), f"✅ {len(output_files)} 件のファイルを処理しました"
+
+with gr.Blocks() as app:
+    gr.Markdown("## 📝 校正ツール Web UI")
+
+    with gr.Row():
+            start_button = gr.Button("▶ START")
+	            stop_button = gr.Button("⏸ STOP")
+		            resume_button = gr.Button("⏵ 再開")
+
+    with gr.Row():
+            global_hotwords = gr.Textbox(label="🌍 Global Hotwords (1行1語)", lines=30, interactive=True, scale=1)
+	            local_hotwords = gr.Textbox(label="📄 Local Hotwords (1行1語)", lines=30, interactive=True, scale=1)
+
+        with gr.Column(scale=2):
+	            gr.Markdown("### 📂 INPUT ファイル")
+		                input_files = gr.File(label="", file_types=[".txt"], file_count="multiple")
+
+        with gr.Column(scale=2):
+	            gr.Markdown("### 📁 出力ファイル リンク")
+		                output_links = gr.HTML(label="🔗 出力ファイルへのリンク")
+
+    result_text = gr.Textbox(label="ログ", lines=10, interactive=False)
+
+    start_button.click(
+            fn=run_proofreader,
+	            inputs=[global_hotwords, local_hotwords, input_files],
+		            outputs=[output_links, result_text]
+			        )
+
+app.launch()~
