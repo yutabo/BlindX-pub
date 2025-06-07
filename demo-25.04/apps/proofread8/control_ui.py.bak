@@ -1,0 +1,56 @@
+import gradio as gr
+from pathlib import Path
+from collections import Counter
+import chardet
+from proofreader import Proofreader  # ← 適宜調整
+
+def robust_read_text(path):
+    raw = Path(path).read_bytes()
+    detected = chardet.detect(raw)
+    encoding = detected.get("encoding", "utf-8")
+    try:
+        return raw.decode(encoding)
+    except Exception:
+        return raw.decode("utf-8", errors="ignore")
+
+def run_proofreader(files, output_dir_text, hotwords_text):
+    if not files:
+        return "❌ ファイルが選択されていません"
+
+    hotwords = hotwords_text.strip().split()
+    output_dir = Path(output_dir_text)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    pf = Proofreader(hotwords=hotwords)
+
+    # 重複排除＆パスとして扱う
+    unique_paths = set(Path(f.name) for f in files)
+
+    count = 0
+    for path in unique_paths:
+        text = robust_read_text(path)
+        result = pf.process(text)
+        out_path = output_dir / path.name
+        out_path.write_text(result)
+        count += 1
+
+    return f"✅ 校正完了: {count} 件処理しました（出力先: {output_dir}）"
+
+with gr.Blocks() as app:
+    gr.Markdown("### 📝 複数ファイル対応・校正ツール Web UI")
+
+    files_input = gr.File(label="📂 校正したい .txt ファイルを複数選んでドラッグ＆ドロップ", file_types=[".txt"], file_count="multiple")
+
+    output_dir = gr.Textbox(label="📁 出力ディレクトリ（存在しなければ自動作成）")
+    hotwords = gr.Textbox(label="✨ HOTWORDS（スペース区切り）")
+
+    run_button = gr.Button("🚀 校正スタート")
+    result = gr.Textbox(label="✅ 処理ログ")
+
+    run_button.click(
+        fn=run_proofreader,
+        inputs=[files_input, output_dir, hotwords],
+        outputs=result
+    )
+
+app.launch()

@@ -78,8 +78,8 @@ if __name__ == "__main__":
     #    parser.add_argument('--hotwords', nargs='+', help='hot words')
     parser.add_argument('--encoding', default='auto', help='text encoding (e.g., utf-8, utf-16-le, or auto)')
     parser.add_argument('--hotfile', help='hot file')
-    parser.add_argument('--max_chars', help='max chars　何文字詰め込むか')
-    parser.add_argument('--num_beams', default=2, help='max beams : 何個候補を出すか')
+    parser.add_argument('--max_chars', default=0, help='max chars　何文字詰め込むか')
+    parser.add_argument('--num_beams', default=3, help='max beams : 何個候補を出すか')
     args = parser.parse_args()
 
     def chunk_lines_by_char_limit(lines, max_chars=None):
@@ -242,6 +242,7 @@ if __name__ == "__main__":
         chunks = chunk_lines_by_char_limit(lines, max_chars=max_chars)
 
         #        print(f"[DEBUG] チャンク数 = {len(chunks)}")
+        print(f'Max Chars : {max_chars}       Num Beams : {num_of_beams}')
         print(f"hotwords : {' '.join(hotwords)}")
         print('\n--------')
 
@@ -300,21 +301,6 @@ if __name__ == "__main__":
             # ↓ この行の後に入れる
             # for output_text, dict_name in output_texts_all:
             #     ...
-
-#            import difflib
-#            print("\n[DEBUG] === 類似度付き output_texts_per_line ===")
-#            for i, outputs in enumerate(output_texts_per_line):
-#                input_line = input_lines[i].strip()
-#                print(f"\nline {i}: {input_line}")
-                
-#                if outputs:
-#                    for text, model in outputs:
-#                        text_clean = text.strip()
-#                        sim = difflib.SequenceMatcher(None, input_line, text_clean).ratio()
-#                        print(f"  - 出力: {repr(text)}  [{model}]  スコア: {sim:.2f}")
-#                    else:
-#                        print("  - 出力なし")
-
 
             proofreaders = []   # 初期化
             # ★ここで Proofreader を行ごとにまとめて構築
