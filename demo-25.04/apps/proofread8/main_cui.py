@@ -242,6 +242,7 @@ if __name__ == "__main__":
         chunks = chunk_lines_by_char_limit(lines, max_chars=max_chars)
 
         #        print(f"[DEBUG] チャンク数 = {len(chunks)}")
+
         print(f'Max Chars : {max_chars}       Num Beams : {num_of_beams}')
         print(f"hotwords : {' '.join(hotwords)}")
         print('\n--------')

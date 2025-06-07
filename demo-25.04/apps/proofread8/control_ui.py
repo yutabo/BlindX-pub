@@ -67,8 +67,16 @@ def run_proofreader_stream(global_text, local_text, files , max_chars, num_beams
         log += f"[{datetime.now().strftime('%H:%M:%S')}] 実行: {' '.join(cmd)}\n"
         yield make_html_links(links), log
 
+        import subprocess
+        import os
+        import sys
+
+        env = os.environ.copy()
+        env["PATH"] = sys.exec_prefix + "/Scripts;" + env["PATH"]
+        env["PYTHONPATH"] = os.pathsep.join(sys.path)
+
         try:
-            subprocess.run(cmd, check=True)
+            subprocess.run(cmd, check=True,env=env)
             links.append(output_name)
             log += f"✅ 完了: {name}\n"
         except subprocess.CalledProcessError:
