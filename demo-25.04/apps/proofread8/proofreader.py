@@ -162,9 +162,8 @@ class Proofreader():
             raise FileNotFoundError(f"MeCab辞書が見つかりません: {dic_path}")
 
 #        self.wakati_tagger = MeCab.Tagger("-Owakati")
-        wakati_tagger = MeCab.Tagger(f"-Owakati -d {DIC_PATH}") 
+        wakati_tagger = MeCab.Tagger(f"-Owakati -d {DIC_PATH}")
 #        wakati_tagger = MeCab.Tagger("-Owakati -d /opt/homebrew/lib/mecab/dic/mecab-ipadic-neologd")
-#        print(f'[DEBUG] Neologd Start ')
         self.passed_index = 0
 
     @property
@@ -179,7 +178,7 @@ class Proofreader():
         # dict_namesを取得して split(':') でリストに変換
         raw_dict_names = await self.inference.send_recv_async('query:', 'dict_names')
         self.dict_names = raw_dict_names.split(':')
-        self.dict_count = len(self.dict_names)  # ✅ ←これでOK        
+        self.dict_count = len(self.dict_names)  # ✅ ←これでOK
 #        print("[DEBUG] dict_names =", self.dict_names)
         self.dict_count = len(self.dict_names)
 #        self.dict_count = len(self.dict_names.split(':'))

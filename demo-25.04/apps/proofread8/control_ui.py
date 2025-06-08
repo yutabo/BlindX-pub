@@ -43,8 +43,10 @@ def run_hottool(input_files):
     return "✅ hottool.py 実行完了", hotwords_text
 
 
-# 実行処理
-def run_proofreader_stream(global_text, local_text, files , max_chars, num_beams):
+import requests
+import uuid
+
+def run_proofreader_stream_remote(global_text, local_text, files , max_chars, num_beams):
     log = ""
     links = []
 
@@ -59,6 +61,56 @@ def run_proofreader_stream(global_text, local_text, files , max_chars, num_beams
     output_dir.mkdir(exist_ok=True)
 
     for file in files:
+        text = Path(file.name).read_text(encoding="utf-8")
+        unique_id = str(uuid.uuid4())
+        output_name = f"{unique_id}.html"
+        out_file = output_dir / output_name
+
+        log += f"[{datetime.now().strftime('%H:%M:%S')}] API送信中: {file.name}\n"
+        yield make_html_links(links), log
+
+        try:
+            response = requests.post("http://192.168.1.149:8000/proofread", json={
+                "text": text,
+                "num_beams": num_beams
+            })
+
+            response.raise_for_status()
+            html = response.text
+
+            with open(out_file, "w", encoding="utf-8") as f:
+                f.write(html)
+
+            links.append(output_name)
+            log += f"✅ 完了: {file.name}\n"
+
+        except Exception as e:
+            log += f"❌ エラー: {file.name}\n{e}\n"
+
+        yield make_html_links(links), log
+
+    if not links:
+        log += "⚠️ 出力ファイルが作成されませんでした\n"
+        yield "", log
+
+
+# 実行処理
+def run_proofreader_stream_local(global_text, local_text, files , max_chars, num_beams):
+    log = ""
+    links = []
+
+    if not files:
+        log += "❌ 入力ファイルがありません\n"
+        yield "", log
+        return
+
+    output_dir = Path("output_html")
+    output_dir.mkdir(exist_ok=True)
+
+    for file in files:
+#        text = Path(flie.name).read_text(encoding="utf-8")
+        save_hotwords(global_text, local_text) 
+        unique_id = str(uuid.uuid4())
         name = Path(file.name).name
         output_name = name + ".html"
         out_file = output_dir / output_name
@@ -143,9 +195,18 @@ with gr.Blocks(css="""
 # }
 # """) as app:
 
-    
-    gr.Markdown("## 📝 校正ツール Web UI")
+    with gr.Row():
 
+        gr.HTML("""
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div style="font-size: 24px; font-weight: bold;">📝 BlindX 校正ツール</div>
+        <div style="display: flex; align-items: center;">
+        <div style="margin-right: 10px;">Copyright (c) 2025 AXTech.Care Inc.</div>
+        <img src="/static/logo.png" alt="logo" style="height: 30px;">
+        </div>
+        </div>
+        """) 
+        
     with gr.Row():
         start_button = gr.Button("▶ START")
         stop_button = gr.Button("⏸ STOP")
@@ -178,7 +239,7 @@ with gr.Blocks(css="""
     log_text = gr.Textbox(label="ログ", lines=10, interactive=False)
 
     start_button.click(
-        fn=run_proofreader_stream,
+        fn=run_proofreader_stream_local,
         inputs=[global_hotwords, local_hotwords, input_files, char_limit_slider, beams_slider],
         outputs=[output_links, log_text]
     )
@@ -202,10 +263,14 @@ with gr.Blocks(css="""
 # FastAPIに統合
 if __name__ == "__main__":
     from fastapi import FastAPI
+    
     from fastapi.staticfiles import StaticFiles
     import uvicorn
 
     fastapi_app = FastAPI()
+    
+    # ← この行を追加！
+    fastapi_app.mount("/static", StaticFiles(directory="static"), name="static")
     fastapi_app.mount("/output", StaticFiles(directory="output_html"), name="output")
     gr.mount_gradio_app(fastapi_app, app, path="/")
 

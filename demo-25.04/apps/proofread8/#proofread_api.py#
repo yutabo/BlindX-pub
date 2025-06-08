@@ -1,0 +1,46 @@
+# proofread_api.py
+from flask import Flask, request, jsonify
+import subprocess
+
+app = Flask(__name__)
+
+@app.route("/")
+def health_check():
+    return "Proofread API Server is running."
+
+@app.route("/proofread", methods=["POST"])
+def run_proofread():
+    input_file = request.json.get("input_file", "input.txt")
+    num_beams = request.json.get("num_beams", 3)
+
+    # 実行コマンド（例：main_cui.py に引数を渡す）
+    cmd = ["python", "main_cui.py", "-i", input_file, "-b", str(num_beams)]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    return jsonify({
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+        "returncode": result.returncode
+    })
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8000)
+
+ing="utf-8") as f:
+            html = f.read()
+                except FileNotFoundError:
+                            html = "(HTML出力が見つかりませんでした)"
+
+                                # 5. 後片付け（任意）
+                                    os.remove(input_path)
+                                        # os.remove(output_path) ← ファイル保存したい場合は消さない
+
+                                            return jsonify({
+                                                        "stdout": result.stdout,
+                                                                "stderr": result.stderr,
+                                                                        "html": html,
+                                                                                "returncode": result.returncode
+                                                                                    })
+
+                                        if __name__ == "__main__":
+                                                app.run(host="0.0.0.0", port=8000)~

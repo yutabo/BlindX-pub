@@ -78,8 +78,8 @@ if __name__ == "__main__":
     #    parser.add_argument('--hotwords', nargs='+', help='hot words')
     parser.add_argument('--encoding', default='auto', help='text encoding (e.g., utf-8, utf-16-le, or auto)')
     parser.add_argument('--hotfile', help='hot file')
-    parser.add_argument('--max_chars', default=0, help='max chars　何文字詰め込むか')
-    parser.add_argument('--num_beams', default=3, help='max beams : 何個候補を出すか')
+    parser.add_argument('--max_chars', default=0, type=int, help='max chars　何文字詰め込むか')
+    parser.add_argument('--num_beams', default=3, type=int, help='max beams : 何個候補を出すか')
     args = parser.parse_args()
 
     def chunk_lines_by_char_limit(lines, max_chars=None):
@@ -390,6 +390,10 @@ if __name__ == "__main__":
 
             conv = Ansi2HTMLConverter()
             html_output = conv.convert(buffer.getvalue(), full=True)
+
+            # 💡 <meta charset="UTF-8"> を head に追加（あれば）
+            if "<head>" in html_output:
+                html_output = html_output.replace("<head>", "<head><meta charset='UTF-8'>", 1)
 
             with open(args.output, 'w', encoding='utf-8') as f:
                 f.write(html_output) 
